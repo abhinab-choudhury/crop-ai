@@ -1,0 +1,21 @@
+// Better-T-Stack configuration file
+// safe to delete
+
+{
+	"$schema": "https://r2.better-t-stack.dev/schema.json",
+	"version": "2.40.3",
+	"createdAt": "2025-09-03T10:53:31.635Z",
+	"database": "postgres",
+	"orm": "prisma",
+	"backend": "express",
+	"runtime": "node",
+	"frontend": ["native-nativewind"],
+	"addons": ["biome", "husky", "turborepo"],
+	"examples": [],
+	"auth": "better-auth",
+	"packageManager": "npm",
+	"dbSetup": "docker",
+	"api": "none",
+	"webDeploy": "none",
+	"serverDeploy": "none"
+}

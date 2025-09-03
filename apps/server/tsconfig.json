@@ -1,0 +1,19 @@
+{
+	"compilerOptions": {
+		"target": "ESNext",
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"verbatimModuleSyntax": true,
+		"strict": true,
+		"skipLibCheck": true,
+		"baseUrl": "./",
+		"paths": {
+			"@/*": ["./src/*"],
+			"prisma": ["node_modules/prisma"]
+		},
+		"outDir": "./dist",
+		"types": ["node"],
+		"composite": true,
+		"jsx": "react-jsx"
+	}
+}
