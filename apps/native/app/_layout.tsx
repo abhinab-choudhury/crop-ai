@@ -1,36 +1,37 @@
+import { type Theme, ThemeProvider } from "@react-navigation/native";
 import { Stack } from "expo-router";
-import {
-	DarkTheme,
-	DefaultTheme,
-	type Theme,
-	ThemeProvider,
-} from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "../global.css";
-import { NAV_THEME } from "@/lib/constants";
-import React, { useRef } from "react";
-import { useColorScheme } from "@/lib/use-color-scheme";
+import { PortalHost } from "@rn-primitives/portal";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import React from "react";
 import { Platform } from "react-native";
 import { setAndroidNavigationBar } from "@/lib/android-navigation-bar";
+import { NAV_THEME } from "@/lib/theme";
+import { useColorScheme } from "@/lib/use-color-scheme";
+import { Toaster } from 'sonner-native';
+import { useFonts, Poppins_400Regular, Poppins_500Medium, Poppins_700Bold } from "@expo-google-fonts/poppins";
+import * as SplashScreen from "expo-splash-screen";
 
-const LIGHT_THEME: Theme = {
-	...DefaultTheme,
-	colors: NAV_THEME.light,
-};
-const DARK_THEME: Theme = {
-	...DarkTheme,
-	colors: NAV_THEME.dark,
-};
+const LIGHT_THEME: Theme = NAV_THEME.light;
+const DARK_THEME: Theme = NAV_THEME.dark;
 
 export const unstable_settings = {
 	initialRouteName: "(drawer)",
 };
+SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-	const hasMounted = useRef(false);
+	const hasMounted = React.useRef(false);
+	const queryClient = new QueryClient();
 	const { colorScheme, isDarkColorScheme } = useColorScheme();
 	const [isColorSchemeLoaded, setIsColorSchemeLoaded] = React.useState(false);
+	const [fontsLoaded] = useFonts({
+		Poppins_400Regular,
+		Poppins_500Medium,
+		Poppins_700Bold,
+	})
 
 	useIsomorphicLayoutEffect(() => {
 		if (hasMounted.current) {
@@ -44,6 +45,14 @@ export default function RootLayout() {
 		setIsColorSchemeLoaded(true);
 		hasMounted.current = true;
 	}, []);
+	
+	React.useEffect(() => {
+		if (fontsLoaded) {
+			SplashScreen.hideAsync();
+		}
+	}, [fontsLoaded]);
+
+	if (!fontsLoaded) return null;
 
 	if (!isColorSchemeLoaded) {
 		return null;
@@ -52,13 +61,17 @@ export default function RootLayout() {
 		<ThemeProvider value={isDarkColorScheme ? DARK_THEME : LIGHT_THEME}>
 			<StatusBar style={isDarkColorScheme ? "light" : "dark"} />
 			<GestureHandlerRootView style={{ flex: 1 }}>
-				<Stack>
-					<Stack.Screen name="(drawer)" options={{ headerShown: false }} />
-					<Stack.Screen
-						name="modal"
-						options={{ title: "Modal", presentation: "modal" }}
-					/>
-				</Stack>
+				<QueryClientProvider client={queryClient}>
+					<Stack>
+						<Stack.Screen name="(drawer)" options={{ headerShown: false }} />
+						<Stack.Screen
+							name="modal"
+							options={{ title: "Modal", presentation: "modal" }}
+						/>
+					</Stack>
+					<PortalHost />
+					<Toaster />
+				</QueryClientProvider>
 			</GestureHandlerRootView>
 		</ThemeProvider>
 	);

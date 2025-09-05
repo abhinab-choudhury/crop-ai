@@ -8,6 +8,11 @@ module.exports = {
 	presets: [require("nativewind/preset")],
 	theme: {
 		extend: {
+			fontFamily: {
+				poppins: ["Poppins_400Regular", "sans-serif"],
+				poppinsMedium: ["Poppins_500Medium", "sans-serif"],
+				poppinsBold: ["Poppins_700Bold", "sans-serif"],
+			},
 			colors: {
 				background: "hsl(var(--background))",
 				foreground: "hsl(var(--foreground))",
@@ -53,7 +58,21 @@ module.exports = {
 			borderWidth: {
 				hairline: hairlineWidth(),
 			},
+			keyframes: {
+				"accordion-down": {
+					from: { height: "0" },
+					to: { height: "var(--radix-accordion-content-height)" },
+				},
+				"accordion-up": {
+					from: { height: "var(--radix-accordion-content-height)" },
+					to: { height: "0" },
+				},
+			},
+			animation: {
+				"accordion-down": "accordion-down 0.2s ease-out",
+				"accordion-up": "accordion-up 0.2s ease-out",
+			},
 		},
 	},
-	plugins: [],
+	plugins: [require("tailwindcss-animate")],
 };

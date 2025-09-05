@@ -1,7 +1,16 @@
-module.exports = function (api) {
+module.exports = (api) => {
 	api.cache(true);
-	const plugins = [];
-
+	const plugins = [
+		[
+			"module-resolver",
+			{
+				root: ["./"],
+				alias: {
+					"@": "./",
+				},
+			},
+		],
+	];
 	plugins.push("react-native-reanimated/plugin");
 
 	return {

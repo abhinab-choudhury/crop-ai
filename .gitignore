@@ -1,4 +1,5 @@
 node_modules
+v10
 .turbo
 .alchemy
 .env

@@ -1,5 +1,5 @@
 {
-	"name": "sih_2025",
+	"name": "crop-ai",
 	"private": true,
 	"workspaces": [
 		"apps/*",
@@ -13,15 +13,7 @@
 		"check-types": "turbo check-types",
 		"dev:native": "turbo -F native dev",
 		"dev:web": "turbo -F web dev",
-		"dev:server": "turbo -F server dev",
-		"db:push": "turbo -F server db:push",
-		"db:studio": "turbo -F server db:studio",
-		"db:generate": "turbo -F server db:generate",
-		"db:migrate": "turbo -F server db:migrate",
-		"db:start": "turbo -F server db:start",
-		"db:watch": "turbo -F server db:watch",
-		"db:stop": "turbo -F server db:stop",
-		"db:down": "turbo -F server db:down"
+		"dev:server": "turbo -F server dev"
 	},
 	"dependencies": {},
 	"devDependencies": {
@@ -35,5 +27,5 @@
 			"biome check --write ."
 		]
 	},
-	"packageManager": "npm@11.0.0"
+	"packageManager": "pnpm@10.12.1"
 }

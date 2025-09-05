@@ -1,4 +1,4 @@
-# sih_2025
+# crop-ai
 
 This project was created with [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack), a modern TypeScript stack that combines Express, and more.
 
@@ -11,8 +11,8 @@ This project was created with [Better-T-Stack](https://github.com/AmanVarshney01
 - **shadcn/ui** - Reusable UI components
 - **Express** - Fast, unopinionated web framework
 - **Node.js** - Runtime environment
-- **Prisma** - TypeScript-first ORM
-- **PostgreSQL** - Database engine
+- **Mongoose** - TypeScript-first ORM
+- **MongoDB** - Database engine
 - **Authentication** - Better-Auth
 - **Biome** - Linting and formatting
 - **Husky** - Git hooks for code quality
@@ -23,25 +23,25 @@ This project was created with [Better-T-Stack](https://github.com/AmanVarshney01
 First, install the dependencies:
 
 ```bash
-npm install
+pnpm install
 ```
 ## Database Setup
 
-This project uses PostgreSQL with Prisma.
+This project uses MongoDB with Mongoose.
 
-1. Make sure you have a PostgreSQL database set up.
-2. Update your `apps/server/.env` file with your PostgreSQL connection details.
+1. Make sure you have MongoDB set up.
+2. Update your `apps/server/.env` file with your MongoDB connection URI.
 
-3. Generate the Prisma client and push the schema:
+3. Apply the schema to your database:
 ```bash
-npm run db:push
+pnpm db:push
 ```
 
 
 Then, run the development server:
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 Use the Expo Go app to run the mobile application.
@@ -54,7 +54,7 @@ The API is running at [http://localhost:3000](http://localhost:3000).
 ## Project Structure
 
 ```
-sih_2025/
+crop-ai/
 ├── apps/
 │   ├── native/      # Mobile application (React Native, Expo)
 │   └── server/      # Backend API (Express)
@@ -62,12 +62,12 @@ sih_2025/
 
 ## Available Scripts
 
-- `npm run dev`: Start all applications in development mode
-- `npm run build`: Build all applications
-- `npm run dev:web`: Start only the web application
-- `npm run dev:server`: Start only the server
-- `npm run check-types`: Check TypeScript types across all apps
-- `npm run dev:native`: Start the React Native/Expo development server
-- `npm run db:push`: Push schema changes to database
-- `npm run db:studio`: Open database studio UI
-- `npm run check`: Run Biome formatting and linting
+- `pnpm dev`: Start all applications in development mode
+- `pnpm build`: Build all applications
+- `pnpm dev:web`: Start only the web application
+- `pnpm dev:server`: Start only the server
+- `pnpm check-types`: Check TypeScript types across all apps
+- `pnpm dev:native`: Start the React Native/Expo development server
+- `pnpm db:push`: Push schema changes to database
+- `pnpm db:studio`: Open database studio UI
+- `pnpm check`: Run Biome formatting and linting

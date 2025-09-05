@@ -1,0 +1,13 @@
+services:
+  mongo_db:
+    image: mongo:latest
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+
+volumes:
+  mongo_data:
