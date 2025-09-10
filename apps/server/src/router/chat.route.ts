@@ -1,9 +1,9 @@
 import express from "express";
 import {
-	chatController,
-	deleteChatController,
-	deleteChatHistoryController,
-	getChatHistoryListController,
+  chatController,
+  deleteChatController,
+  deleteChatHistoryController,
+  getChatHistoryListController,
 } from "@/controller/chat.controller";
 import { requireAuth } from "@/middleware/auth.middleware";
 

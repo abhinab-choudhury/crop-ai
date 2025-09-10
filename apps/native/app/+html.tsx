@@ -6,34 +6,34 @@ import type { ReactNode } from "react";
 // The contents of this function only run in Node.js environments and
 // do not have access to the DOM or browser APIs.
 export default function Root({ children }: { children: ReactNode }) {
-	return (
-		<html lang="en">
-			<head>
-				<meta charSet="utf-8" />
-				<meta content="IE=edge" httpEquiv="X-UA-Compatible" />
+  return (
+    <html lang="en">
+      <head>
+        <meta charSet="utf-8" />
+        <meta content="IE=edge" httpEquiv="X-UA-Compatible" />
 
-				{/*
+        {/*
           This viewport disables scaling which makes the mobile website act more like a native app.
           However this does reduce built-in accessibility. If you want to enable scaling, use this instead:
             <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
         */}
-				<meta
-					content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1.00001,viewport-fit=cover"
-					name="viewport"
-				/>
-				{/*
+        <meta
+          content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1.00001,viewport-fit=cover"
+          name="viewport"
+        />
+        {/*
           Disable body scrolling on web. This makes ScrollView components work closer to how they do on native.
           However, body scrolling is often nice to have for mobile web. If you want to enable it, remove this line.
         */}
-				<ScrollViewStyleReset />
+        <ScrollViewStyleReset />
 
-				{/* Using raw CSS styles as an escape-hatch to ensure the background color never flickers in dark-mode. */}
-				<style dangerouslySetInnerHTML={{ __html: responsiveBackground }} />
-				{/* Add any additional <head> elements that you want globally available on web... */}
-			</head>
-			<body>{children}</body>
-		</html>
-	);
+        {/* Using raw CSS styles as an escape-hatch to ensure the background color never flickers in dark-mode. */}
+        <style dangerouslySetInnerHTML={{ __html: responsiveBackground }} />
+        {/* Add any additional <head> elements that you want globally available on web... */}
+      </head>
+      <body>{children}</body>
+    </html>
+  );
 }
 
 const responsiveBackground = `

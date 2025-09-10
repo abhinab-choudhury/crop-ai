@@ -3,21 +3,21 @@ import { cssInterop } from "nativewind";
 import { cn } from "@/lib/utils";
 
 type IconProps = LucideProps & {
-	as: LucideIcon;
+  as: LucideIcon;
 };
 
 function IconImpl({ as: IconComponent, ...props }: IconProps) {
-	return <IconComponent {...props} />;
+  return <IconComponent {...props} />;
 }
 
 cssInterop(IconImpl, {
-	className: {
-		target: "style",
-		nativeStyleToProp: {
-			height: "size",
-			width: "size",
-		},
-	},
+  className: {
+    target: "style",
+    nativeStyleToProp: {
+      height: "size",
+      width: "size",
+    },
+  },
 });
 
 /**
@@ -41,19 +41,19 @@ cssInterop(IconImpl, {
  * @param {...LucideProps} ...props - Additional Lucide icon props passed to the "as" icon.
  */
 function Icon({
-	as: IconComponent,
-	className,
-	size = 14,
-	...props
+  as: IconComponent,
+  className,
+  size = 14,
+  ...props
 }: IconProps) {
-	return (
-		<IconImpl
-			as={IconComponent}
-			className={cn("text-foreground", className)}
-			size={size}
-			{...props}
-		/>
-	);
+  return (
+    <IconImpl
+      as={IconComponent}
+      className={cn("text-foreground", className)}
+      size={size}
+      {...props}
+    />
+  );
 }
 
 export { Icon };

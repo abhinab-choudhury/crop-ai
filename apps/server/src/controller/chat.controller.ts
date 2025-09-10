@@ -10,11 +10,11 @@ import type { Request, Response } from "express";
  * @access     Authenticated
  */
 export async function chatController(
-	_req: Request,
-	res: Response,
+  _req: Request,
+  res: Response,
 ): Promise<void> {
-	// TODO: Implement LangGraph conversation flow
-	res.send("api");
+  // TODO: Implement LangGraph conversation flow
+  res.send("api");
 }
 
 /**
@@ -24,11 +24,11 @@ export async function chatController(
  * @access     Authenticated
  */
 export async function deleteChatController(
-	_req: Request,
-	res: Response,
+  _req: Request,
+  res: Response,
 ): Promise<void> {
-	// TODO: Implement delete chat session logic
-	res.send("api");
+  // TODO: Implement delete chat session logic
+  res.send("api");
 }
 
 /**
@@ -50,11 +50,11 @@ export async function deleteChatController(
  * }
  */
 export async function getChatHistoryListController(
-	_req: Request,
-	res: Response,
+  _req: Request,
+  res: Response,
 ): Promise<void> {
-	// TODO: Implement chat history fetching
-	res.send("api");
+  // TODO: Implement chat history fetching
+  res.send("api");
 }
 
 /**
@@ -65,9 +65,9 @@ export async function getChatHistoryListController(
  * @access     Authenticated
  */
 export async function deleteChatHistoryController(
-	_req: Request,
-	res: Response,
+  _req: Request,
+  res: Response,
 ): Promise<void> {
-	// TODO: Implement chat history deletion
-	res.send("api");
+  // TODO: Implement chat history deletion
+  res.send("api");
 }

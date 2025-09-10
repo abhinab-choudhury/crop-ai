@@ -25,6 +25,7 @@ First, install the dependencies:
 ```bash
 pnpm install
 ```
+
 ## Database Setup
 
 This project uses MongoDB with Mongoose.
@@ -33,10 +34,10 @@ This project uses MongoDB with Mongoose.
 2. Update your `apps/server/.env` file with your MongoDB connection URI.
 
 3. Apply the schema to your database:
+
 ```bash
 pnpm db:push
 ```
-
 
 Then, run the development server:
 
@@ -46,10 +47,6 @@ pnpm dev
 
 Use the Expo Go app to run the mobile application.
 The API is running at [http://localhost:3000](http://localhost:3000).
-
-
-
-
 
 ## Project Structure
 
