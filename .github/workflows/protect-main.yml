@@ -1,0 +1,27 @@
+name: Protect main branch
+
+on:
+  workflow_dispatch: # run manually when needed
+
+jobs:
+  protect-main:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Protect main branch
+        uses: octokit/request-action@v2.x
+        with:
+          route: PUT /repos/{owner}/{repo}/branches/main/protection
+          owner: ${{ github.repository_owner }}
+          repo: ${{ github.event.repository.name }}
+          mediaType: '{"previews": ["luke-cage"]}'
+          data: |
+            {
+              "required_status_checks": null,
+              "enforce_admins": true,
+              "required_pull_request_reviews": {
+                "required_approving_review_count": 1
+              },
+              "restrictions": null
+            }
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
