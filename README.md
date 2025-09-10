@@ -31,6 +31,7 @@ crop-ai/
 ├── apps/
 │   ├── native/      # Mobile application (React Native, Expo)
 │   └── server/      # Backend API (Express)
+│   └── web/         # React Web App (Vite)
 ```
 
 ## Available Scripts
