@@ -1,14 +1,16 @@
-import React, { ComponentProps } from "react";
-import { Drawer } from "expo-router/drawer";
-import { Ionicons } from "@expo/vector-icons";
-import { DefaultTheme, Theme } from "@react-navigation/native";
-import { NAV_THEME, THEME } from "@/lib/constants";
-import { DrawerContentScrollView, DrawerItemList } from "@react-navigation/drawer";
-import { Image, Text, TouchableOpacity, View } from "react-native";
-import logo from "@/assets/icon.png";
-import { Button } from "@/components/ui/button";
+import React, { ComponentProps } from 'react';
+import { Drawer } from 'expo-router/drawer';
+import { Ionicons } from '@expo/vector-icons';
+import { DefaultTheme, Theme } from '@react-navigation/native';
+import { NAV_THEME, THEME } from '@/lib/constants';
+import { DrawerContentScrollView, DrawerItemList } from '@react-navigation/drawer';
+import { Image, Text, View } from 'react-native';
+import logo from '@/assets/icon.png';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { SignedIn, useAuth, useUser } from '@clerk/clerk-expo';
+import { SignOutButton } from '@/components/signout-btn';
 
-type IoniconName = ComponentProps<typeof Ionicons>["name"];
+type IoniconName = ComponentProps<typeof Ionicons>['name'];
 
 export default function DrawerLayout() {
   const LIGHT_THEME: Theme = {
@@ -20,14 +22,11 @@ export default function DrawerLayout() {
     active: IoniconName,
     inactive: IoniconName,
     size: number,
-    color: string
+    color: string,
   ) => (
-    <Ionicons
-      name={focused ? active : inactive}
-      size={focused ? size + 2 : size}
-      color={color}
-    />
+    <Ionicons name={focused ? active : inactive} size={focused ? size + 2 : size} color={color} />
   );
+  const { user } = useUser();
 
   return (
     <Drawer
@@ -38,88 +37,126 @@ export default function DrawerLayout() {
         drawerActiveBackgroundColor: THEME.light.muted,
         drawerLabelStyle: {
           fontSize: 15,
-          fontWeight: "500",
+          fontWeight: '500',
         },
-        drawerType: "slide",
+        drawerType: 'slide',
         swipeEdgeWidth: 80,
       }}
       drawerContent={(props) => (
         <DrawerContentScrollView {...props} contentContainerStyle={{ flex: 1 }}>
           <View className="font-poppinsBold items-center border-b border-gray-200 py-6">
-            <Image
-              source={logo}
-              className="w-16 h-16 rounded-full mb-2"
-            />
-            <Text className="text-lg font-bold">Crop AI</Text>
+            <Image source={logo} className="w-16 h-16 rounded-full mb-2" />
+            <Text className="text-lg font-poppinsBold">Crop AI</Text>
           </View>
 
-          <View className="mt-4 flex-1 font-poppinsRegular">
+          <View className="mt-4 flex-1 px-2">
             <DrawerItemList {...props} />
+            <SignOutButton />
           </View>
 
-          <View className="border-t border-gray-200 px-4 py-3">
-            <TouchableOpacity
-              onPress={async () => {
-                try {
-                  console.log("User signed out");
-                } catch (err) {
-                  console.error("Logout failed:", err);
-                }
-              }}
-            >
-              <View className="flex flex-row mx-auto items-center space-x-2">
-                <Ionicons size={20} name="log-out" className="text-red-900" />
-                <Text className="text-red-500 font-medium text-base">Logout</Text>
+          <SignedIn>
+            <View className="flex flex-row items-center gap-4 p-2 bg-gray-50 rounded-xl shadow-sm">
+              <Avatar
+                className="w-16 h-16 rounded-full border-2 border-teal-900"
+                alt={'user-profile'}
+              >
+                <AvatarImage
+                  source={{
+                    uri: user?.hasImage ? user?.imageUrl : 'https://github.com/mrzachnugent.png',
+                  }}
+                />
+                <AvatarFallback>
+                  <Text className="text-white font-bold">ZN</Text>
+                </AvatarFallback>
+              </Avatar>
+              <View className="flex flex-col">
+                <Text className="text-gray-900 font-semibold text-lg">{user?.firstName}</Text>
+                <Text className="text-gray-500 text-sm">
+                  {user?.emailAddresses[0].emailAddress}
+                </Text>
               </View>
-            </TouchableOpacity>
-          </View>
-
+            </View>
+          </SignedIn>
         </DrawerContentScrollView>
       )}
     >
       <Drawer.Screen
         name="index"
         options={{
-          title: "Chat",
+          title: 'Chat',
+          drawerLabel: ({ focused, color }) => (
+            <Text
+              style={{
+                fontFamily: 'Poppins_500Medium',
+                color: color,
+                fontSize: 16,
+                fontWeight: focused ? '600' : '400',
+              }}
+            >
+              Chat
+            </Text>
+          ),
           drawerIcon: ({ focused, color, size }) =>
-            tabIcon(focused, "chatbubble", "chatbubble-outline", size, color),
+            tabIcon(focused, 'chatbubble', 'chatbubble-outline', size, color),
         }}
       />
       <Drawer.Screen
         name="profile"
         options={{
-          title: "Profile",
-          drawerItemStyle: { display: "contents" },
+          title: 'Profile',
+          drawerLabel: ({ focused, color }) => (
+            <Text
+              style={{
+                fontFamily: 'Poppins_500Medium',
+                color: color,
+                fontSize: 16,
+                fontWeight: focused ? '600' : '400',
+              }}
+            >
+              Profile
+            </Text>
+          ),
           drawerIcon: ({ focused, color, size }) =>
-            tabIcon(focused, "person", "person-outline", size, color),
+            tabIcon(focused, 'person', 'person-outline', size, color),
         }}
       />
       <Drawer.Screen
         name="about"
         options={{
-          title: "About",
-          drawerItemStyle: { display: "contents" },
+          title: 'About',
+          drawerLabel: ({ focused, color }) => (
+            <Text
+              style={{
+                fontFamily: 'Poppins_500Medium',
+                color: color,
+                fontSize: 16,
+                fontWeight: focused ? '600' : '400',
+              }}
+            >
+              About
+            </Text>
+          ),
           drawerIcon: ({ focused, color, size }) =>
-            tabIcon(focused, "information-circle", "information-circle-outline", size, color),
+            tabIcon(focused, 'information-circle', 'information-circle-outline', size, color),
         }}
       />
       <Drawer.Screen
         name="chat/[id]"
         options={{
-          title: "History",
-          drawerItemStyle: { display: "none" },
+          title: 'History',
+          drawerItemStyle: { display: 'none' },
           drawerIcon: ({ focused, color, size }) =>
-            tabIcon(focused, "time", "time-outline", size, color),
+            tabIcon(focused, 'time', 'time-outline', size, color),
         }}
       />
       <Drawer.Screen
         name="login"
         options={{
-          title: "Login",
+          title: 'Login',
           headerShown: false,
-          drawerItemStyle: { display: "none" },
+          drawerItemStyle: { display: 'none' },
           drawerIcon: ({ focused, color, size }) =>
-            tabIcon(focused, "log-in", "log-in-outline", size, color),
+            tabIcon(focused, 'log-in', 'log-in-outline', size, color),
         }}
       />
     </Drawer>
