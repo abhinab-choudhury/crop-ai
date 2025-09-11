@@ -19,6 +19,8 @@ dist/
 .alchemy
 /.next/
 .vercel
+prisma/generated/
+
 
 # deps
 node_modules/

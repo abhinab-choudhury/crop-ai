@@ -1,9 +1,17 @@
-import { cn } from "@/lib/utils";
-import type React from "react";
-import { SafeAreaView } from "react-native";
+import React from "react";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-export const Container = ({ className, children }: { className?:string, children: React.ReactNode }) => {
+type ContainerProps = {
+  children: React.ReactNode;
+  className?: string;
+};
+
+export const Container = ({ children, className }: ContainerProps) => {
   return (
-    <SafeAreaView className={`${cn("flex-1 bg-background", className)}`}>{children}</SafeAreaView>
+    <SafeAreaView
+      className={`flex-1 bg-background ${className || ""}`}
+    >
+      {children}
+    </SafeAreaView>
   );
 };

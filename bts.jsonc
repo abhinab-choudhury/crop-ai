@@ -1,0 +1,26 @@
+// Better-T-Stack configuration file
+// safe to delete
+
+{
+  "$schema": "https://r2.better-t-stack.dev/schema.json",
+  "version": "2.44.0",
+  "createdAt": "2025-09-11T02:42:28.625Z",
+  "database": "mongodb",
+  "orm": "mongoose",
+  "backend": "express",
+  "runtime": "node",
+  "frontend": [
+    "react-router",
+    "native-nativewind"
+  ],
+  "addons": [
+    "turborepo"
+  ],
+  "examples": [],
+  "auth": "none",
+  "packageManager": "pnpm",
+  "dbSetup": "docker",
+  "api": "none",
+  "webDeploy": "none",
+  "serverDeploy": "none"
+}

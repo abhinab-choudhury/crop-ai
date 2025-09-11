@@ -1,0 +1,33 @@
+# Node modules and build artifacts
+node_modules
+dist
+build
+v10
+ios/Pods
+android/.gradle
+android/build
+.expo
+.temp
+.env
+.turbo
+.alchemy
+*.lock
+
+# Output files
+*.log
+*.tmp
+*.bak
+
+# Generated JS/TS files
+**/*.js.map
+**/*.d.ts
+
+# Monorepo package lock files
+pnpm-lock.yaml
+yarn.lock
+package-lock.json
+
+# Editor and OS files
+.vscode
+.idea
+.DS_Store

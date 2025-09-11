@@ -1,12 +1,12 @@
 {
   "name": "crop-ai",
   "private": true,
+  "type": "module",
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
   "scripts": {
-    "prepare": "husky",
     "dev": "turbo dev",
     "build": "turbo build",
     "check-types": "turbo check-types",
@@ -26,5 +26,5 @@
       "prettier --write"
     ]
   },
-  "packageManager": "pnpm@10.12.1"
+  "packageManager": "pnpm@10.15.1"
 }

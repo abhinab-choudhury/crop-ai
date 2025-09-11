@@ -2,46 +2,40 @@ import React, { useState } from "react";
 import {
   TextInput,
   View,
-  TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
+  Keyboard,
+  Pressable,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-export default function ChatInput() {
+export function ChatInput() {
   const [text, setText] = useState("");
-  const [inputHeight, setInputHeight] = useState(40);
+
+  const handleSend = () => {
+    if (!text.trim()) return; 
+    setText("");
+    Keyboard.dismiss();
+  };
 
   return (
-    <View className="flex flex-row gap-2">
-      <View className="flex-1 rounded-xl bg-gray-100 border border-gray-300 px-3 py-2 max-h-32">
-        <TextInput
-          value={text}
-          onChangeText={setText}
-          placeholder="Message..."
-          placeholderTextColor="#888"
-          multiline
-          className="text-base text-black font-poppins"
-          style={{
-            minHeight: 40,
-            height: inputHeight,
-          }}
-          onContentSizeChange={(e) =>
-            setInputHeight(e.nativeEvent.contentSize.height)
-          }
-        />
-      </View>
+    <View className="flex-row items-center gap-2 p-2 bg-white">
+      <TextInput
+        value={text}
+        onChangeText={setText}
+        placeholder="Message..."
+        placeholderTextColor="#888"
+        className="flex-1 rounded-full bg-gray-100 px-4 py-2 text-base text-black font-poppins"
+        returnKeyType="send"
+        onSubmitEditing={handleSend}
+      />
 
-      <TouchableOpacity
-        onPress={() => {
-          console.log("Send:", text);
-          setText("");
-          setInputHeight(40);
-        }}
-        className="w-20 bg-teal-500 rounded-full items-center justify-center"
+      <Pressable
+        onPress={handleSend}
+        className={`w-10 h-10 rounded-full items-center justify-center ${
+          text.trim() ? "bg-teal-500" : "bg-gray-300"
+        }`}
       >
-        <Ionicons name="send" size={20} color="#fff" />
-      </TouchableOpacity>
+        <Ionicons name="send" size={18} color="#fff" />
+      </Pressable>
     </View>
   );
 }

@@ -1,0 +1,14 @@
+{
+  "printWidth": 100,            // Max line length
+  "tabWidth": 2,                // 2 spaces per tab
+  "useTabs": false,             // Use spaces, not tabs
+  "semi": true,                 // Always add semicolons
+  "singleQuote": true,          // Use single quotes
+  "trailingComma": "all",       // Include trailing commas for multi-line structures
+  "bracketSpacing": true,       // Space between brackets { foo: bar }
+  "arrowParens": "always",      // Always include parentheses for arrow functions
+  "endOfLine": "lf",            // Consistent line endings (LF)
+  "jsxSingleQuote": false,      // Double quotes in JSX for convention
+  "quoteProps": "as-needed",    // Only quote object props when required
+  "embeddedLanguageFormatting": "auto"  // Format embedded languages like HTML/CSS in JS
+}
