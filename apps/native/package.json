@@ -10,6 +10,7 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@clerk/clerk-expo": "^2.14.30",
     "@expo-google-fonts/poppins": "^0.4.0",
     "@expo/vector-icons": "^15.0.2",
     "@react-navigation/bottom-tabs": "^7.2.0",

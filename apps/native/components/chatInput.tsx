@@ -1,18 +1,13 @@
-import React, { useState } from "react";
-import {
-  TextInput,
-  View,
-  Keyboard,
-  Pressable,
-} from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import React, { useState } from 'react';
+import { TextInput, View, Keyboard, Pressable } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 export function ChatInput() {
-  const [text, setText] = useState("");
+  const [text, setText] = useState('');
 
   const handleSend = () => {
-    if (!text.trim()) return; 
-    setText("");
+    if (!text.trim()) return;
+    setText('');
     Keyboard.dismiss();
   };
 
@@ -31,7 +26,7 @@ export function ChatInput() {
       <Pressable
         onPress={handleSend}
         className={`w-10 h-10 rounded-full items-center justify-center ${
-          text.trim() ? "bg-teal-500" : "bg-gray-300"
+          text.trim() ? 'bg-teal-500' : 'bg-gray-300'
         }`}
       >
         <Ionicons name="send" size={18} color="#fff" />
