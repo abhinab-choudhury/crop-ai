@@ -15,7 +15,10 @@
     "dev:server": "turbo -F server dev",
     "prepare": "husky"
   },
-  "dependencies": {},
+  "dependencies": {
+    "expo-auth-session": "~7.0.7",
+    "expo-web-browser": "~15.0.6"
+  },
   "devDependencies": {
     "turbo": "^2.5.4",
     "prettier": "^3.6.2",
