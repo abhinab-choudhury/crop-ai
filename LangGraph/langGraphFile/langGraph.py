@@ -3,7 +3,7 @@ import os
 from langchain.chat_models import init_chat_model
 import google.generativeai as genai
 
-genai.configure(api_key="AIzaSyCg12Zj7uiwtJFe5F050x55xSGqZUHEH4c")
+genai.configure(api_key="")
 
 class GraphState(dict):
     pass
@@ -58,4 +58,5 @@ app = graph.compile()
 
 # result = app.invoke({"input": "Explain crop rotation"}, return_state=True)
 result = app.invoke({"input": "What disease does my plant have?"}, return_state=True)
+
 print(result)
