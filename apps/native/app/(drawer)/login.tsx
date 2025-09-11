@@ -9,17 +9,9 @@ import { Redirect } from 'expo-router';
 
 export default function Login() {
   const { isSignedIn } = useAuth();
-  const { user, isLoaded } = useUser();
+  const { user } = useUser();
   if (isSignedIn || user) {
     return <Redirect href={'/(drawer)'} />;
-  }
-
-  if (isLoaded) {
-    return (
-      <View className="flex-1 items-center justify-center">
-        <ActivityIndicator size="large" color="#000" />
-      </View>
-    );
   }
 
   return (

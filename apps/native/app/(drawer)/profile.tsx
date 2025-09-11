@@ -1,9 +1,77 @@
-import { View, Text } from 'react-native';
+import React from 'react';
+import { View, Text, Image, ScrollView, ActivityIndicator } from 'react-native';
+import { useUser } from '@clerk/clerk-expo';
 
 export default function Profile() {
+  const { user, isLoaded } = useUser();
+
+  if (!isLoaded) {
+    return (
+      <View className="flex-1 items-center justify-center bg-gray-100">
+        <ActivityIndicator size="large" color="#22c55e" />
+        <Text className="mt-3 text-gray-600">Loading profile...</Text>
+      </View>
+    );
+  }
+
   return (
-    <View className="flex-1 items-center justify-center bg-background">
-      <Text className="text-xl font-bold text-foreground">Profile Screen</Text>
-    </View>
+    <ScrollView className="flex-1 bg-gray-100">
+      {/* Header */}
+      <View className="bg-green-600 py-6 items-center">
+        <Text className="text-white text-xl font-bold">My Profile</Text>
+      </View>
+
+      {/* Profile Section */}
+      <View className="items-center p-6 bg-white mb-3">
+        <Image
+          source={{ uri: user?.imageUrl }}
+          className="w-24 h-24 rounded-full mb-4 bg-gray-200"
+        />
+        <Text className="text-2xl font-bold text-center text-gray-800">
+          {user?.fullName || 'Guest User'}
+        </Text>
+        <Text className="text-gray-600">{user?.primaryEmailAddress?.emailAddress}</Text>
+        <Text className="text-gray-500 text-sm">
+          Member since {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
+        </Text>
+      </View>
+
+      {/* Details Section */}
+      <View className="bg-white p-6 mx-3 rounded-xl shadow-sm mb-3">
+        <Text className="text-lg font-bold text-gray-800 border-b border-gray-200 pb-2 mb-4">
+          Personal Information
+        </Text>
+
+        <View className="flex-row justify-between mb-3">
+          <Text className="text-gray-600 font-semibold">Phone</Text>
+          <Text className="text-gray-800">{user?.phone || 'Not provided'}</Text>
+        </View>
+
+        <View className="flex-row justify-between mb-3">
+          <Text className="text-gray-600 font-semibold">Location</Text>
+          <Text className="text-gray-800">{user?.address || 'Not provided'}</Text>
+        </View>
+
+        <View className="flex-row justify-between mb-3">
+          <Text className="text-gray-600 font-semibold">Farm Size</Text>
+          <Text className="text-gray-800">{user?.farmSize || 'Not provided'}</Text>
+        </View>
+
+        <View className="flex-row justify-between mb-3">
+          <Text className="text-gray-600 font-semibold">Preferred Crops</Text>
+          <Text className="text-gray-800">Not specified</Text>
+        </View>
+      </View>
+
+      {/* Footer */}
+      <View className="p-6 items-center bg-green-600">
+        <Text className="text-white text-sm mb-1 text-center">
+          Crop AI - Powered by AI for Farmers
+        </Text>
+        <Text className="text-white text-sm text-center">
+          In collaboration with Government of Jharkhand
+        </Text>
+      </View>
+    </ScrollView>
   );
 }

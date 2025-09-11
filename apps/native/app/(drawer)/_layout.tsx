@@ -7,7 +7,7 @@ import { DrawerContentScrollView, DrawerItemList } from '@react-navigation/drawe
 import { Image, Text, View } from 'react-native';
 import logo from '@/assets/icon.png';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { SignedIn, useAuth, useUser } from '@clerk/clerk-expo';
+import { SignedIn, useUser } from '@clerk/clerk-expo';
 import { SignOutButton } from '@/components/signout-btn';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
