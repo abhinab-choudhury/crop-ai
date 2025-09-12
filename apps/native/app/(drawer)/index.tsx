@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import {
   FlatList,
   KeyboardAvoidingView,
@@ -9,18 +9,120 @@ import {
   View,
   Image,
   ActivityIndicator,
+  Animated,
+  Easing,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import botIcon from '@/assets/bot.png';
 
-type FeatureType = 'greet' | 'feature1' | 'feature2' | 'feature3' | 'default';
+type FeatureType = 'greet' | 'weather' | 'disease' | 'market' | 'soil' | 'default';
+type Language = 'en' | 'hi';
 
 type Message = {
   id: string;
-  type: 'text' | 'image';
+  type: 'text' | 'image' | 'audio';
   content: string;
   sender: 'user' | 'bot';
   feature?: FeatureType;
+  lang?: Language;
+};
+
+// --- Dummy Auth State ---
+const dummyAuth = {
+  isAuthenticated: true,
+  user: { name: 'Farmer Ram', id: '123' },
+};
+
+// (Bot features and welcome content remain the same)
+const botFeatures: Record<Language, Record<FeatureType, string>> = {
+  hi: {
+    greet: 'नमस्ते किसान भाई 👋 मैं आपका खेती सहायक हूँ।',
+    weather: '📍 भुवनेश्वर मौसम:\n🌦 32°C, हल्की बदली।\n🌱 सुझाई गई फसलें: धान, मक्का, टमाटर।',
+    disease:
+      '🩺 पौधों की सेहत: मक्का की पत्तियों पर धब्बे → फफूंद रोग। कृपया इलाज के लिए नीम तेल का छिड़काव करें।',
+    market: '📊 बाज़ार अपडेट: धान ↑12%, मक्का स्थिर।',
+    soil: '🧪 मिट्टी की जाँच: आपकी आवाज़ के अनुसार, मिट्टी में नाइट्रोजन की कमी है। यूरिया डालें।',
+    default: '🤖 मैंने सही से समझा नहीं। आप मौसम 🌦, रोग 🦠, बाज़ार 📊 पूछ सकते हैं।',
+  },
+  en: {
+    greet: "Hey 👋 I'm your farm assistant.",
+    weather:
+      '📍 Bhubaneswar Weather:\n🌦 32°C, partly cloudy.\n🌱 Suggested crops: Rice, Maize, Tomato.',
+    disease:
+      '🩺 Plant Health: Leaf spots detected on maize → fungal disease. Please spray neem oil for treatment.',
+    market: '📊 Market Update: Rice ↑12%, Maize stable.',
+    soil: '🧪 Soil Health: Based on your voice note, the soil seems nitrogen-deficient. Add compost or urea.',
+    default: '🤖 I didn’t quite get that. Try asking: Weather, Market, Soil, or Disease.',
+  },
+};
+const welcomeContent: Record<
+  Language,
+  { title: string; subtitle: string; questions: { text: string; query: string }[] }
+> = {
+  en: {
+    title: 'Welcome to Crop AI 🌱',
+    subtitle: 'Try asking one of these questions:',
+    questions: [
+      { text: "📍 What's the best crop for Bhubaneswar?", query: 'weather for Bhubaneswar' },
+      { text: '🦠 Detect crop disease from an image', query: 'detect disease' },
+      { text: '📈 Which crop gives best profit this season?', query: 'market prices' },
+    ],
+  },
+  hi: {
+    title: 'क्रॉप AI में आपका स्वागत है 🌱',
+    subtitle: 'इनमें से कोई एक प्रश्न पूछ कर देखें:',
+    questions: [
+      { text: '📍 भुवनेश्वर के लिए सबसे अच्छी फसल कौन सी है?', query: 'भुवनेश्वर का मौसम' },
+      { text: '🦠 तस्वीर से फसल रोग का पता लगाएं', query: 'रोग का पता लगाएं' },
+      { text: '📈 इस सीजन में कौन सी फसल सबसे अच्छा मुनाफा देती है?', query: 'बाजार का भाव' },
+    ],
+  },
+};
+
+// 2. New Recording Animation Component
+const RecordingIndicator = ({ isRecording }: { isRecording: boolean }) => {
+  const opacityAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (isRecording) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(opacityAnim, {
+            toValue: 0.2,
+            duration: 700,
+            useNativeDriver: true,
+            easing: Easing.ease,
+          }),
+          Animated.timing(opacityAnim, {
+            toValue: 1,
+            duration: 700,
+            useNativeDriver: true,
+            easing: Easing.ease,
+          }),
+        ]),
+      ).start();
+    } else {
+      opacityAnim.stopAnimation();
+      opacityAnim.setValue(1);
+    }
+  }, [isRecording]);
+
+  if (!isRecording) return null;
+
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 15, marginBottom: 5 }}>
+      <Animated.View
+        style={{
+          width: 10,
+          height: 10,
+          borderRadius: 5,
+          backgroundColor: 'red',
+          opacity: opacityAnim,
+        }}
+      />
+      <Text style={{ marginLeft: 8, color: '#e53e3e' }}>Recording...</Text>
+    </View>
+  );
 };
 
 export default function ChatScreen() {
@@ -28,91 +130,84 @@ export default function ChatScreen() {
   const [text, setText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const flatListRef = useRef<FlatList>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [uiLang, setUiLang] = useState<Language>('en');
 
-  // --- Demo Bot Features ---
-  const botFeatures: Record<FeatureType, Message> = {
-    greet: {
-      id: '1',
-      type: 'text',
-      content:
-        'Hey! 👋 I’m your smart farm assistant. Ask me about crops, soil, weather, or markets!',
-      sender: 'bot',
-      feature: 'greet',
-    },
-    feature1: {
-      id: '2',
-      type: 'text',
-      content:
-        '📍 Location: Bhubaneswar, India\n\n🌦 Weather: 32°C, partly cloudy, light rain expected in 2 days.\n\n🌱 Suggested Crops:\n- Rice (ideal with upcoming rain)\n- Maize (resilient & profitable)\n- Vegetables (tomato, okra)\n\n💡 Tip: Try rainwater harvesting to save excess water.',
-      sender: 'bot',
-      feature: 'feature1',
-    },
-    feature2: {
-      id: '3',
-      type: 'text',
-      content:
-        '🩺 Plant Health Analysis\n\n⚠️ Detected Issue: Leaf spots observed on maize leaves (likely **Turcicum Leaf Blight / Gray Leaf Spot**).\n\n🌱 Cause: Fungal infection due to humid conditions and poor air circulation.\n\n💡 Recommendation:\n- Spray a fungicide containing **Mancozeb** or **Azoxystrobin**.\n- Ensure proper crop spacing for airflow.\n- Remove heavily infected leaves to prevent spread.\n\n👉 Early treatment will protect yield and stop the disease from spreading.',
-      sender: 'bot',
-      feature: 'feature2',
-    },
-    feature3: {
-      id: '4',
-      type: 'text',
-      content:
-        '📊 **Market Insights**\n\n🌾 Rice demand rising (↑12% this month)\n🌽 Maize stable (good export value)\n🥬 Vegetables prices fluctuating due to supply gaps\n\n💰 Best profit crop right now: **Rice + Maize rotation**',
-      sender: 'bot',
-      feature: 'feature3',
-    },
-    default: {
-      id: '5',
-      type: 'text',
-      content:
-        '🤖 That’s interesting! You can ask me:\n- Weather update 🌦\n- Soil health 🧪\n- Market insights 📊\n- Crop suggestions 🌱',
-      sender: 'bot',
-      feature: 'default',
-    },
+  const micScale = useRef(new Animated.Value(1)).current;
+  const animateMic = () => {
+    Animated.sequence([
+      Animated.timing(micScale, {
+        toValue: 1.4,
+        duration: 200,
+        useNativeDriver: true,
+        easing: Easing.ease,
+      }),
+      Animated.timing(micScale, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+        easing: Easing.ease,
+      }),
+    ]).start();
   };
 
-  // --- Handle Sending User Message ---
-  const sendMessage = () => {
-    if (!text.trim()) return;
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      type: 'text',
-      content: text,
-      sender: 'user',
-    };
-    setMessages((prev) => [...prev, userMessage]);
-    const query = text.toLowerCase();
-    setText('');
-    scrollToEnd();
-    fakeBotReply(query);
+  const detectLang = (query: string): Language => {
+    const hindiChars = /[अ-हऀ-ॿ]/;
+    return hindiChars.test(query) ? 'hi' : 'en';
   };
-
-  // --- Match user query with features ---
   const detectFeature = (query: string): FeatureType => {
-    if (query.includes('hello') || query.includes('hi')) return 'greet';
-    if (query.includes('weather') || query.includes('crop')) return 'feature1';
-    if (query.includes('template') || query.includes('image')) return 'feature2';
-    if (query.includes('market') || query.includes('profit')) return 'feature3';
+    const q = query.toLowerCase();
+    if (q.includes('hello') || q.includes('hi') || q.includes('नमस्ते')) return 'greet';
+    if (q.includes('weather') || q.includes('climate') || q.includes('मौसम')) return 'weather';
+    if (q.includes('disease') || q.includes('image') || q.includes('रोग')) return 'disease';
+    if (q.includes('market') || q.includes('profit') || q.includes('बाज़ार') || q.includes('भाव'))
+      return 'market';
+    if (q.includes('soil') || q.includes('मिट्टी') || q.includes('voice')) return 'soil';
     return 'default';
   };
+  const scrollToEnd = () => {
+    setTimeout(() => {
+      flatListRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+  };
 
-  // --- Fake Bot Typing + Response ---
-  const fakeBotReply = (query: string) => {
+  const fakeBotReply = (query: string, lang: Language) => {
     setIsTyping(true);
     const feature = detectFeature(query);
-
     setTimeout(() => {
-      const response = botFeatures[feature];
+      const response = botFeatures[lang][feature];
       const botMessage: Message = {
-        ...response,
-        id: Date.now().toString(), // ensure unique id
+        id: Date.now().toString(),
+        type: 'text',
+        content: response,
+        sender: 'bot',
+        feature,
+        lang,
       };
       setMessages((prev) => [...prev, botMessage]);
       setIsTyping(false);
       scrollToEnd();
     }, 1200);
+  };
+
+  const sendMessage = (content: string) => {
+    if (!content.trim()) return;
+    const lang = detectLang(content);
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      type: 'text',
+      content,
+      sender: 'user',
+      lang,
+    };
+    setMessages((prev) => [...prev, userMessage]);
+    setUiLang(lang);
+    setText('');
+    scrollToEnd();
+    fakeBotReply(content.toLowerCase(), lang);
+  };
+  const handleSuggestionPress = (query: string) => {
+    sendMessage(query);
   };
 
   const sendImage = () => {
@@ -125,16 +220,36 @@ export default function ChatScreen() {
     };
     setMessages((prev) => [...prev, userMessage]);
     scrollToEnd();
-    fakeBotReply('image');
+    const lastTextMessage = [...messages].reverse().find((m) => m.type === 'text');
+    const replyLang = lastTextMessage?.lang || uiLang;
+    fakeBotReply('image for disease detection', replyLang);
   };
 
-  const scrollToEnd = () => {
-    setTimeout(() => {
-      flatListRef.current?.scrollToEnd({ animated: true });
-    }, 100);
+  // 3. Updated toggleMic logic
+  const toggleMic = () => {
+    animateMic();
+    const currentlyRecording = isRecording;
+    setIsRecording(!currentlyRecording);
+
+    if (currentlyRecording) {
+      setTimeout(() => {
+        const duration = Math.floor(Math.random() * 28) + 2; // Random duration 2-30s
+        const audioMessage: Message = {
+          id: Date.now().toString(),
+          type: 'audio',
+          content: `0:${duration.toString().padStart(2, '0')}`,
+          sender: 'user',
+        };
+        setMessages((prev) => [...prev, audioMessage]);
+        scrollToEnd();
+
+        const lastTextMessage = [...messages].reverse().find((m) => m.type === 'text');
+        const replyLang = lastTextMessage?.lang || uiLang;
+        fakeBotReply('voice message about market', replyLang);
+      }, 500);
+    }
   };
 
-  // --- Render each message ---
   const renderItem = ({ item }: { item: Message }) => {
     const isUser = item.sender === 'user';
     return (
@@ -160,22 +275,48 @@ export default function ChatScreen() {
         <View
           style={{
             backgroundColor: isUser ? '#20C997' : '#E6F7F5',
-            padding: 10,
+            paddingHorizontal: 12,
+            paddingVertical: 10,
             borderRadius: 16,
             maxWidth: '75%',
-            shadowColor: '#000',
-            shadowOpacity: 0.08,
-            shadowOffset: { width: 0, height: 2 },
-            shadowRadius: 3,
           }}
         >
-          {item.type === 'image' ? (
+          {item.type === 'text' && (
+            <Text style={{ color: isUser ? '#fff' : '#004D40', fontSize: 15 }}>{item.content}</Text>
+          )}
+          {item.type === 'image' && (
             <Image
               source={{ uri: item.content }}
               style={{ width: 180, height: 180, borderRadius: 12 }}
             />
-          ) : (
-            <Text style={{ color: isUser ? '#fff' : '#004D40', fontSize: 15 }}>{item.content}</Text>
+          )}
+          {/* 4. New Audio bubble UI */}
+          {item.type === 'audio' && (
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Ionicons name="play" size={24} color="#fff" />
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  marginHorizontal: 10,
+                  height: 20,
+                }}
+              >
+                {[12, 18, 15, 10, 16, 12, 8, 15, 11].map((h, i) => (
+                  <View
+                    key={i}
+                    style={{
+                      width: 2.5,
+                      height: h,
+                      backgroundColor: '#A7F3D0',
+                      borderRadius: 2,
+                      marginRight: 2,
+                    }}
+                  />
+                ))}
+              </View>
+              <Text style={{ color: '#fff', fontSize: 14, fontWeight: '500' }}>{item.content}</Text>
+            </View>
           )}
         </View>
       </View>
@@ -193,9 +334,43 @@ export default function ChatScreen() {
         data={messages}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ padding: 15 }}
+        contentContainerStyle={{
+          padding: 15,
+          flexGrow: 1,
+          justifyContent: messages.length === 0 ? 'center' : 'flex-start',
+        }}
         onContentSizeChange={scrollToEnd}
         onLayout={scrollToEnd}
+        ListEmptyComponent={
+          <View style={{ alignItems: 'center', justifyContent: 'center', flex: 1 }}>
+            <Ionicons name="leaf-outline" size={40} color="#20C997" />
+            <Text style={{ fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginTop: 8 }}>
+              {welcomeContent[uiLang].title}
+            </Text>
+            <Text style={{ color: '#666', textAlign: 'center', marginTop: 4, marginBottom: 16 }}>
+              {welcomeContent[uiLang].subtitle}
+            </Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' }}>
+              {welcomeContent[uiLang].questions.map((q, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={{
+                    backgroundColor: '#E6F7F5',
+                    paddingHorizontal: 12,
+                    paddingVertical: 8,
+                    borderRadius: 12,
+                    margin: 4,
+                  }}
+                  onPress={() => handleSuggestionPress(q.query)}
+                >
+                  <Text style={{ color: '#004D40', fontWeight: '500', fontSize: 13 }}>
+                    {q.text}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        }
       />
 
       {isTyping && (
@@ -205,7 +380,8 @@ export default function ChatScreen() {
         </View>
       )}
 
-      {/* Input bar */}
+      <RecordingIndicator isRecording={isRecording} />
+
       <View
         style={{
           flexDirection: 'row',
@@ -227,24 +403,45 @@ export default function ChatScreen() {
             alignItems: 'center',
             backgroundColor: '#f8f8f8',
             borderRadius: 25,
-            paddingHorizontal: 15,
+            paddingHorizontal: 10,
           }}
         >
+          <TouchableOpacity
+            onPress={() => setUiLang(uiLang === 'en' ? 'hi' : 'en')}
+            style={{ padding: 8 }}
+          >
+            <Text style={{ color: '#00796B', fontWeight: 'bold', fontSize: 16 }}>
+              {uiLang.toUpperCase()}
+            </Text>
+          </TouchableOpacity>
           <TextInput
             value={text}
             onChangeText={setText}
             placeholder="Type a message..."
-            style={{
-              flex: 1,
-              paddingVertical: 8,
-              fontSize: 16,
-            }}
+            style={{ flex: 1, paddingVertical: 10, fontSize: 16, marginLeft: 5 }}
           />
-          <TouchableOpacity className="mr-4" onPress={() => {}}>
-            <Ionicons name="mic-outline" size={24} color="#20C997" />
+          <TouchableOpacity onPress={toggleMic} style={{ marginRight: 12 }}>
+            <Animated.View
+              style={{
+                transform: [{ scale: micScale }],
+                padding: 4,
+                borderRadius: 99,
+                backgroundColor: isRecording ? '#b22222' : '#05998c',
+              }}
+            >
+              <Ionicons name={'mic'} size={20} color={'#fff'} />
+            </Animated.View>
           </TouchableOpacity>
-          <TouchableOpacity onPress={sendMessage}>
-            <Ionicons name="send" size={24} color="#20C997" />
+          <TouchableOpacity
+            onPress={() => sendMessage(text)}
+            disabled={!text.trim()}
+            style={{
+              padding: 8,
+              borderRadius: 99,
+              backgroundColor: text.trim() ? '#14B8A6' : '#D1D5DB',
+            }}
+          >
+            <Ionicons name="send" size={20} color={text.trim() ? '#fff' : '#6b7280'} />
           </TouchableOpacity>
         </View>
       </View>
