@@ -7,9 +7,6 @@ export default function Profile() {
       <View className="p-6">
         {/* Header Card */}
         <View className="rounded-2xl shadow-md mb-6">
-          <Text className="text-2xl text-[#2c3e50] font-poppinsBold text-center mb-2">
-            About Crop AI
-          </Text>
           <Text className="text-base text-gray-600 leading-6 text-start font-poppinsRegular">
             Crop AI is a revolutionary, AI-powered platform designed to empower farmers with a
             science-based approach to agriculture. Developed in collaboration with the Government of
@@ -34,7 +31,7 @@ export default function Profile() {
           <Text className="text-xl font-poppinsBold text-[#34495e] mb-4">Key Features</Text>
 
           {/* Feature Cards */}
-          <View className="rounded-xl shadow p-4 mb-3">
+          <View className="rounded-xl shadow p-2 mb-3">
             <Text className="text-base text-gray-700 font-poppinsBold mb-1">AI-Powered Chat</Text>
             <Text className="text-base text-gray-600 font-poppinsRegular">
               Ask questions in your local language and get instant, actionable advice on any farming
@@ -42,7 +39,7 @@ export default function Profile() {
             </Text>
           </View>
 
-          <View className="rounded-xl shadow p-4 mb-3">
+          <View className="rounded-xl shadow p-2 mb-3">
             <Text className="text-base text-gray-700 font-poppinsBold mb-1">
               Intelligent Recommendations
             </Text>
@@ -52,7 +49,7 @@ export default function Profile() {
             </Text>
           </View>
 
-          <View className="rounded-xl shadow p-4">
+          <View className="rounded-xl shadow p-2">
             <Text className="text-base text-gray-700 font-poppinsBold mb-1">
               Personalized Profile
             </Text>
@@ -61,6 +58,15 @@ export default function Profile() {
               truly personalized experience.
             </Text>
           </View>
+        </View>
+
+        <View className="p-6 items-center">
+          <Text className="text-black text-sm mb-1 text-center">
+            Crop AI - Powered by AI for Farmers
+          </Text>
+          <Text className="text-black text-sm text-center">
+            In collaboration with Government of Jharkhand
+          </Text>
         </View>
       </View>
     </ScrollView>

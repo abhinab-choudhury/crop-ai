@@ -15,18 +15,10 @@ export default function Profile() {
   }
 
   return (
-    <ScrollView className="flex-1 bg-gray-100">
-      {/* Header */}
-      <View className="bg-green-600 py-6 items-center">
-        <Text className="text-white text-xl font-bold">My Profile</Text>
-      </View>
-
+    <ScrollView className="flex-1">
       {/* Profile Section */}
-      <View className="items-center p-6 bg-white mb-3">
-        <Image
-          source={{ uri: user?.imageUrl }}
-          className="w-24 h-24 rounded-full mb-4 bg-gray-200"
-        />
+      <View className="items-center p-6">
+        <Image source={{ uri: user?.imageUrl }} className="w-24 h-24 rounded-full mb-4" />
         <Text className="text-2xl font-bold text-center text-gray-800">
           {user?.fullName || 'Guest User'}
         </Text>
@@ -64,11 +56,11 @@ export default function Profile() {
       </View>
 
       {/* Footer */}
-      <View className="p-6 items-center bg-green-600">
-        <Text className="text-white text-sm mb-1 text-center">
+      <View className="p-6 items-center">
+        <Text className="text-black text-sm mb-1 text-center">
           Crop AI - Powered by AI for Farmers
         </Text>
-        <Text className="text-white text-sm text-center">
+        <Text className="text-black text-sm text-center">
           In collaboration with Government of Jharkhand
         </Text>
       </View>
