@@ -13,6 +13,10 @@ app.use(
 
 app.use(express.json());
 
+app.use('/crop', require('./router/cropRotationRoute'));
+app.use('/chat', require('./router/chat'));
+
+
 app.get("/", (_req, res) => {
 	res.status(200).send("OK");
 });
