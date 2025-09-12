@@ -62,22 +62,22 @@ def predict_image(img, model=disease_model):
         # transforms.Normalize([0.485, 0.456, 0.406],
         #                      [0.229, 0.224, 0.225])
     ])
-    
+
     if not isinstance(img, Image.Image):
         img = Image.open(io.BytesIO(img)).convert("RGB")
     else:
         img = img.convert("RGB")
-    
+
     img_t = transform(img).unsqueeze(0).to(device)
-    
+
     with torch.no_grad():
         yb = model(img_t)
         _, preds = torch.max(yb, dim=1)
-    
+
     return disease_classes[preds[0].item()]
 
 # Test
-img_path = "./image/test(1).JPG"
+img_path = "./image/test(6).jpg"
 img = Image.open(img_path).convert("RGB")
 prediction = predict_image(img)
 print("Prediction:", prediction)
