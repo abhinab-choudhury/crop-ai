@@ -10,18 +10,25 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "dotenv": "^17.2.1",
-    "zod": "^4.0.2",
-    "express": "^5.1.0",
+    "@google/genai": "^1.19.0",
+    "axios": "^1.12.0",
+    "cloudinary": "^2.7.0",
     "cors": "^2.8.5",
-    "mongoose": "^8.14.0"
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0",
+    "mongoose": "^8.18.1",
+    "multer": "^2.0.2",
+    "streamifier": "^0.1.1",
+    "zod": "^4.0.2"
   },
   "devDependencies": {
-    "tsdown": "^0.14.1",
-    "typescript": "^5.8.2",
-    "@types/express": "^5.0.1",
     "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.1",
+    "@types/multer": "^2.0.0",
+    "@types/node": "^22.13.11",
+    "@types/streamifier": "^0.1.2",
+    "tsdown": "^0.14.1",
     "tsx": "^4.19.2",
-    "@types/node": "^22.13.11"
+    "typescript": "^5.8.2"
   }
 }
