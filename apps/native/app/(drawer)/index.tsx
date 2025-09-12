@@ -240,6 +240,9 @@ export default function ChatScreen() {
               fontSize: 16,
             }}
           />
+          <TouchableOpacity className="mr-4" onPress={() => {}}>
+            <Ionicons name="mic-outline" size={24} color="#20C997" />
+          </TouchableOpacity>
           <TouchableOpacity onPress={sendMessage}>
             <Ionicons name="send" size={24} color="#20C997" />
           </TouchableOpacity>
