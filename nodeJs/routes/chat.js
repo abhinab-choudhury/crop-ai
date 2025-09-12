@@ -5,10 +5,23 @@ require('dotenv').config();
 
 const app = express();
 
+const { uploadImage, removeImage } = require('../helpers/cloudinary');
+const multer = require('multer');
+
 const router = express.Router();
-const PORT = process.env.PORT || 3000;
 
 app.use(bodyParser.json());
+
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'uploads/');
+    },
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + path.extname(file.originalname));
+    }
+});
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
@@ -24,74 +37,148 @@ const getConversationState = (sessionId) => {
     return conversations[sessionId];
 };
 
-router.post('/chat', async (req, res) => {
+router.post('/chat', upload.single('image'), async (req, res) => {
     const { sessionId, message } = req.body;
 
-    if (!sessionId || !message) {
-        return res.status(400).json({ success: false, message: "Session ID and message are required." });
+    const image = req.file;
+
+    if (!sessionId || (!message && !image)) {
+        return res.status(400).json({ success: false, message: "Session ID and either a message or image are required." });
     }
 
     const session = getConversationState(sessionId);
-    session.history.push({ role: "user", parts: [{ text: message }] });
-
-    try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-
-        const chat = model.startChat({
-            history: session.history,
-            generationConfig: { temperature: 0.8 },
-            systemInstruction: {
-                parts: [
-                    {
-                        text: "{You are a friendly agricultural assistant. Your goal is to collect specific information from the user for a crop rotation plan. You need the following details: Soil Nitrogen (N), Soil Phosphorus (P), Soil Potassium (K), Soil pH, Country, State, and City. You can interact with the user in any language they use. As you collect each piece of information, respond to the user to keep the conversation going, but also provide a JSON object at the end of your response containing all the collected data so far. The JSON keys must be 'N', 'P', 'K', 'pH', 'country', 'state', and 'city'. If a value is unknown, use 'null'. When you have all seven pieces of information, your final response must be the JSON object ONLY, with no additional text. For example, if you have all the information, your response should be something like this: \n\n```json\n{\n  \"N\": 50,\n  \"P\": 30,\n  \"K\": 150,\n  \"pH\": 6.5,\n  \"country\": \"India\",\n  \"state\": \"Odisha\",\n  \"city\": \"Bhubaneswar\"\n}\n```\n\nUntil then, you will respond to the user in their language and append the current JSON object to your message.}"
-                    }
-
-                ]
-            }
-        });
+    const userMessage = { role: "user", parts: [{ text: message }] };
 
 
-        const result = await chat.sendMessage(message);
-        const modelResponse = result.response.text();
-        console.log(modelResponse);
-        session.history.push({ role: "model", parts: [{ text: modelResponse }] });
+    const isDiseasePredictionRequest = image && message.toLowerCase().includes('disease');
+    const imageUrl = await uploadImage(image.buffer);
 
-        const jsonMatch = modelResponse.match(/```json\n([\s\S]*?)\n```/);
+    if (isDiseasePredictionRequest) {
 
-        if (jsonMatch) {
-            const jsonString = jsonMatch[1];
-            const collectedData = JSON.parse(jsonString);
+        try {
+            const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
-            const isComplete = Object.values(collectedData).every(val => val !== null);
+            const imagePart = {
 
-            if (isComplete) {
-                delete conversations[sessionId];
+                inlineData: {
+
+                    data: image.buffer.toString('base64'),
+                    mimeType: image.mimetype
+                }
+            };
+
+            const chatParts = [
+                { text: `The user wants to identify a crop disease. The image is of a plant.` },
+                imagePart,
+                { text: `Analyze the image. If it's a valid photo of a plant then tell true for isValidImage give message as i got the image please wait while i found the disease. If the photo is not of a plant or is unclear, politely ask the user for a clearer photo of the plant. Return a JSON object with the following structure: { "isValidImage": boolean , "message": text }` }
+            ];
+
+            const result = await model.generateContent(chatParts);
+            const modelResponse = result.response.text();
+
+            const jsonMatch = modelResponse.match(/```json\n([\s\S]*?)\n```/);
+            // console.log(jsonMatch);
+            // console.log(jsonMatch.isValidImage);
+
+
+            if (jsonMatch) {
+                const diseaseData = JSON.parse(jsonMatch[1]);
+
+                console.log(diseaseData.isValidImage);
+
+                if (diseaseData.isValidImage) {
+                    diseaseData.imageUrl = imageUrl;
+                    return res.json({
+                        success: true,
+                        status: "disease_prediction",
+                        data: diseaseData
+                    });
+                } else {
+
+                    return res.json({
+                        success: true,
+                        status: "disease_prediction",
+                        message: "Sorry, I couldn't identify the disease. Please ensure the photo is of a crop."
+                    });
+                }
+            } else {
                 return res.json({
                     success: true,
-                    status: "complete",
-                    data: collectedData
+                    status: "disease_prediction",
+                    message: "Sorry, I couldn't identify the disease. Please ensure the photo is of a crop."
                 });
+            }
+
+        } catch (error) {
+            console.error("Error in disease prediction:", error);
+            return res.status(500).json({ success: false, message: "An error occurred during disease prediction." });
+        }
+
+    } else {
+
+        session.history.push(userMessage);
+
+        try {
+            const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+
+            const chat = model.startChat({
+                history: session.history,
+                generationConfig: { temperature: 0.8 },
+                systemInstruction: {
+                    parts: [
+                        {
+                            text: `You are a friendly agricultural assistant. Your sole purpose is to collect seven pieces of information from the user for a crop rotation plan. The user can chat with you in any language, and you must respond in the same language. The required details are: Soil Nitrogen (N) in mg/kg, Soil Phosphorus (P) in mg/kg, Soil Potassium (K) in mg/kg, Soil pH, Country, State, and City.
+
+As you collect each piece of information, you must do two things:
+1.  **Respond to the user in their language** to keep the conversation going.
+2.  **Append a JSON object to your response** containing all the data collected so far. Use the keys: 'N', 'P', 'K', 'pH', 'country', 'state', and 'city'. If a value is not yet collected, set it to 'null'.
+
+When all seven pieces of information have been collected (or the user indicates they don't know a value), your **final and only response** must be the complete JSON object, with no conversational text.`
+                        }
+                    ]
+                }
+            });
+
+            const result = await chat.sendMessage(message);
+            const modelResponse = result.response.text();
+            session.history.push({ role: "model", parts: [{ text: modelResponse }] });
+
+            const jsonMatch = modelResponse.match(/```json\n([\s\S]*?)\n```/);
+
+            if (jsonMatch) {
+                const jsonString = jsonMatch[1];
+                const collectedData = JSON.parse(jsonString);
+                const isComplete = Object.values(collectedData).every(val => val !== null);
+
+                if (isComplete) {
+                    delete conversations[sessionId];
+                    return res.json({
+                        success: true,
+                        status: "complete",
+                        data: collectedData
+                    });
+                } else {
+                    session.data = collectedData;
+                    const conversationalMessage = modelResponse.replace(jsonMatch[0], '').trim();
+                    return res.json({
+                        success: true,
+                        status: "incomplete",
+                        message: conversationalMessage
+                    });
+                }
             } else {
-                session.data = collectedData;
-                const conversationalMessage = modelResponse.replace(jsonMatch[0], '').trim();
                 return res.json({
                     success: true,
                     status: "incomplete",
-                    message: conversationalMessage
+                    message: modelResponse
                 });
             }
-        } else {
-            return res.json({
-                success: true,
-                status: "incomplete",
-                message: modelResponse
-            });
-        }
 
-    } catch (error) {
-        console.error("Error in AI chat:", error);
-        delete conversations[sessionId];
-        return res.status(500).json({ success: false, message: "Sorry, I couldn't process your request. Please try again later." });
+        } catch (error) {
+            console.error("Error in AI chat:", error);
+            delete conversations[sessionId];
+            return res.status(500).json({ success: false, message: "Sorry, I couldn't process your request. Please try again later." });
+        }
     }
 });
 
