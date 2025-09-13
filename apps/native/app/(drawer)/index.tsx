@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import botIcon from '@/assets/bot.png';
+import axios from "axios";
 
 type FeatureType = 'greet' | 'weather' | 'disease' | 'market' | 'soil' | 'default';
 type Language = 'en' | 'hi';
@@ -171,23 +172,49 @@ export default function ChatScreen() {
     }, 100);
   };
 
-  const fakeBotReply = (query: string, lang: Language) => {
+  // its not fake bot data ---- its fetchBotReply helps to fecth the data from backend
+  const fakeBotReply = async (query: string, lang: Language) => {
     setIsTyping(true);
-    const feature = detectFeature(query);
-    setTimeout(() => {
-      const response = botFeatures[lang][feature];
+
+    try {
+      const feature = detectFeature(query);
+
+      //fecthing the data from backend rest api ...............
+      const res = await axios.post("http://YOUR_BACKEND_URL/api/chat", {
+        userId: dummyAuth.user.id,
+        query,
+        lang,
+        feature,
+      });
+
+      const data = res.data;
+      console.log(data)
+
       const botMessage: Message = {
         id: Date.now().toString(),
-        type: 'text',
-        content: response,
-        sender: 'bot',
+        type: data.type || "text",
+        content: data.content,
+        sender: "bot",
         feature,
         lang,
       };
+
       setMessages((prev) => [...prev, botMessage]);
+    } catch (err) {
+      console.error("Error fetching bot reply:", err);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now().toString(),
+          type: "text",
+          content: "couldn’t connect to the server.",
+          sender: "bot",
+        },
+      ]);
+    } finally {
       setIsTyping(false);
       scrollToEnd();
-    }, 1200);
+    }
   };
 
   const sendMessage = (content: string) => {
@@ -195,35 +222,75 @@ export default function ChatScreen() {
     const lang = detectLang(content);
     const userMessage: Message = {
       id: Date.now().toString(),
-      type: 'text',
+      type: "text",
       content,
-      sender: 'user',
+      sender: "user",
       lang,
     };
     setMessages((prev) => [...prev, userMessage]);
     setUiLang(lang);
-    setText('');
+    setText("");
     scrollToEnd();
+
     fakeBotReply(content.toLowerCase(), lang);
   };
-  const handleSuggestionPress = (query: string) => {
-    sendMessage(query);
-  };
 
-  const sendImage = () => {
+
+  //fetching the data from backend of image.........
+  const sendImage = async () => {
+
+    //how to set image-Url.........?????
+    const imageUrl =
+      'https://cropprotectionnetwork.org/image?s=%2Fimg%2Fhttp%2Fgeneral%2Ftar-northern-southern-foliar-disease-sisson.jpg%2F034d51d6214a9018a973b03e9d35f4e1.jpg&h=0&w=316&fit=contain';
+
+
     const userMessage: Message = {
       id: Date.now().toString(),
       type: 'image',
-      content:
-        'https://cropprotectionnetwork.org/image?s=%2Fimg%2Fhttp%2Fgeneral%2Ftar-northern-southern-foliar-disease-sisson.jpg%2F034d51d6214a9018a973b03e9d35f4e1.jpg&h=0&w=316&fit=contain',
+      content: imageUrl,
       sender: 'user',
     };
     setMessages((prev) => [...prev, userMessage]);
     scrollToEnd();
-    const lastTextMessage = [...messages].reverse().find((m) => m.type === 'text');
-    const replyLang = lastTextMessage?.lang || uiLang;
-    fakeBotReply('image for disease detection', replyLang);
+
+    try {
+      setIsTyping(true);
+
+      //change it into api of backend of nodejs........
+      const res = await axios.post("http://YOUR_BACKEND_URL/api/analyze-image", {
+        userId: dummyAuth.user.id,
+        imageUrl,
+      });
+
+      const data = res.data;
+
+      const botMessage: Message = {
+        id: Date.now().toString(),
+        type: data.type || "text",
+        content: data.content,
+        sender: "bot",
+        lang: uiLang,
+        feature: "disease",
+      };
+
+      setMessages((prev) => [...prev, botMessage]);
+    } catch (err) {
+      console.error("Image upload error:", err);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now().toString(),
+          type: "text",
+          content: "Couldn’t analyze image.",
+          sender: "bot",
+        },
+      ]);
+    } finally {
+      setIsTyping(false);
+      scrollToEnd();
+    }
   };
+
 
   // 3. Updated toggleMic logic
   const toggleMic = () => {
