@@ -1,4 +1,7 @@
 # prod
+/venv/
+/.venv/
+.env
 dist/
 /build
 /out/
