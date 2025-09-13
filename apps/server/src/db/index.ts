@@ -7,3 +7,4 @@ await mongoose.connect(process.env.DATABASE_URL || '').catch((error) => {
 const client = mongoose.connection.getClient().db('myDB');
 
 export { client };
+
