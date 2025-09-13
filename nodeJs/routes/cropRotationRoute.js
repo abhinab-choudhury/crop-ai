@@ -63,7 +63,7 @@ const getHistoricalClimateData = async (latitude, longitude) => {
         const response = await fetch(apiUrl);
         const result = await response.json();
         const daily = result.daily;
-        console.log(daily);
+        // console.log(daily);
 
         if (!daily || !daily.time || daily.time.length === 0) {
             console.log("Historical weather data not found via Open-Meteo.");
@@ -96,7 +96,9 @@ const getSoilData = async (latitude, longitude) => {
         const data = await response.json();
         const layers = data?.properties?.layers || [];
 
-        // console.log(data.properties.layers);
+        console.log(data?.properties?.layers);
+
+        console.log(JSON.stringify(data, null, 2));
 
         const getLayerValues = (name) => {
             const layer = layers.find(l => l.name === name);
@@ -109,7 +111,7 @@ const getSoilData = async (latitude, longitude) => {
         const clayContent = getLayerValues("clay");
         const organicCarbon = getLayerValues("soc");
 
-        console.log("ph " + phValue + " nitrogen " + nitrogenValue + " clay " + clayContent + " soc " + organicCarbon);
+        // console.log("ph " + phValue + " nitrogen " + nitrogenValue + " clay " + clayContent + " soc " + organicCarbon);
 
         return {
             ph: phValue ? (phValue / 10).toFixed(2) : null,
@@ -124,16 +126,7 @@ const getSoilData = async (latitude, longitude) => {
     }
 }
 
-
-Router.post('/predict', async (req, res) => {
-
-    console.log(req.body);
-    const { N, P, K, ph, country, state, city } = req.body;
-
-    if (!N || !P || !K || !ph || !country || !state || !city) {
-        return res.status(400).json({ success: false, message: "Please provide all required fields: N, P, K, ph, country, state, city." });
-    }
-
+const predict = async (N, P, K, ph, country, state, city, language) => {
     const locationData = await getLocation(country, state, city);
     if (!locationData.latitude || !locationData.longitude) {
         return res.status(404).json({ success: false, message: "Could not find coordinates for the specified location." });
@@ -142,13 +135,15 @@ Router.post('/predict', async (req, res) => {
     const climateData = await getHistoricalClimateData(locationData.latitude, locationData.longitude);
     const soilApiData = await getSoilData(locationData.latitude, locationData.longitude);
 
-    console.log("humidity " + climateData.avgHumidity + " temperature " + climateData.avgTemperature + " precipitation " + climateData.totalPrecipitation)
+    console.log("humidity " + climateData.avgHumidity + " temperature " + climateData.avgTemperature + " precipitation " + climateData.totalPrecipitation);
+
+    console.log(soilApiData);
 
     console.log("ph " + soilApiData.ph + " nitrogen " + soilApiData.nitrogen + " clay " + soilApiData.clayContent + " soc " + soilApiData.organicCarbon);
 
     try {
         const prompt = `
-You are a world-class agronomist and soil scientist AI. Your task is to create an optimal, sustainable, and profitable 12-month crop rotation schedule based on the provided data.
+You are a world-class agronomist and soil scientist AI. Your task is to create an optimal, sustainable, and profitable 12-month crop rotation schedule based on the provided data..
 
 **Data Profile:**
 - **Farm Location:** ${city}, ${state}, ${country}
@@ -162,7 +157,7 @@ Based on ALL the data above, generate a detailed 12-month crop rotation plan.
 **Output Format Instructions:**
 You MUST return the response as a single, valid JSON object. Do not include any text, explanations, or markdown formatting (like \`\`\`json) before or after the JSON object.
 
-The JSON object must follow this exact structure:
+The JSON object must follow this exact structure with the language ${language} not always in english:
 
 {
   "rotationPlan": [
@@ -186,6 +181,14 @@ The JSON object must follow this exact structure:
 - The "rotationPlan" array should contain 2 to 3 crop suggestions, covering the main seasons for the region.
 - Ensure all string values are properly escaped within the JSON.
 - The entire output must be only the JSON object, starting with { and ending with }.
+
+**CRITICAL RULES:**
+- JSON field names (keys) remain in English for parsing
+- ALL string values must be in ${language} language Strictly
+- Include 2-3 seasons appropriate for the region
+- Each crop should have 4 key activities
+- Make justifications detailed and farmer-friendly
+- Ensure proper JSON formatting with escaped quotes if needed
 `;
         const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
         const result = await model.generateContent(prompt);
@@ -193,12 +196,14 @@ The JSON object must follow this exact structure:
         const text = response.text();
         console.log(text);
 
-        return res.json({ success: true, message: "Crop rotation plan generated successfully.", data: text });
+        return text;
 
     } catch (error) {
         console.error("Error generating content from Gemini:", error);
-        return res.status(500).json({ success: false, message: "Internal server error while generating prediction." });
+        return error;
     }
-});
+}
 
-module.exports = Router;
+// getSoilData(23.79759, 86.42992);
+
+module.exports = predict;

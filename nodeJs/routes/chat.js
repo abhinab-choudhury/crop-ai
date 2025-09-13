@@ -7,6 +7,7 @@ const app = express();
 
 const { uploadImage, removeImage } = require('../helpers/cloudinary');
 const multer = require('multer');
+const predict = require('./cropRotationRoute');
 
 const router = express.Router();
 
@@ -37,9 +38,9 @@ const getConversationState = (sessionId) => {
     return conversations[sessionId];
 };
 
+
 router.post('/chat', upload.single('image'), async (req, res) => {
     const { sessionId, message } = req.body;
-
     const image = req.file;
 
     if (!sessionId || (!message && !image)) {
@@ -47,139 +48,182 @@ router.post('/chat', upload.single('image'), async (req, res) => {
     }
 
     const session = getConversationState(sessionId);
-    const userMessage = { role: "user", parts: [{ text: message }] };
 
-
-    const isDiseasePredictionRequest = image && message.toLowerCase().includes('disease');
-    const imageUrl = await uploadImage(image.buffer);
-
-    if (isDiseasePredictionRequest) {
-
-        try {
-            const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-
-            const imagePart = {
-
+    if (message) {
+        session.history.push({ role: "user", parts: [{ text: message }] });
+    }
+    if (image) {
+        session.history.push({
+            role: "user",
+            parts: [{
                 inlineData: {
-
-                    data: image.buffer.toString('base64'),
+                    data: image.buffer.toString("base64"),
                     mimeType: image.mimetype
                 }
-            };
+            }]
+        });
+    }
 
-            const chatParts = [
-                { text: `The user wants to identify a crop disease. The image is of a plant.` },
-                imagePart,
-                { text: `Analyze the image. If it's a valid photo of a plant then tell true for isValidImage give message as i got the image please wait while i found the disease. If the photo is not of a plant or is unclear, politely ask the user for a clearer photo of the plant. Return a JSON object with the following structure: { "isValidImage": boolean , "message": text }` }
-            ];
+    try {
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-            const result = await model.generateContent(chatParts);
-            const modelResponse = result.response.text();
+        const chat = model.startChat({
+            history: session.history,
+            generationConfig: { temperature: 0.8 },
+            systemInstruction: {
+                parts: [{
+                    text: `
+You are an agricultural assistant. The user can ask for:
+1. Crop rotation planning → requires N, P, K, pH, country, state, city.
+2. Crop disease detection → requires an image of the plant.
 
-            const jsonMatch = modelResponse.match(/```json\n([\s\S]*?)\n```/);
-            // console.log(jsonMatch);
-            // console.log(jsonMatch.isValidImage);
+Rules:
+- At first, always detect intent. And also talk with the user and ONLY return JSON of the form: { "Message":"The llm response in friendly chatting way","intent": "rotation" | "disease" | "unknown" }
+- If intent = "rotation": continue conversation to collect N, P, K, pH, country, state, city. If user can give the soil features then collect otherwise if user says he doesn't have information then for N, P, K, pH make these values as 0 and return json with location and these values as 0.
+- When you have collected all required information (N, P, K, pH, country, state, city), return JSON with "status": "complete":
+  { "status": "complete", "N": number, "P": number, "K": number, "pH": number, "country": string, "state": string, "city": string, "Message": "Got all information, processing...", Language: the language user used }
+- If still collecting information, return:
+  { "status": "collecting", "Message": "your response asking for missing info", "intent": "rotation" }
+- If intent = "disease":
+   - If no image uploaded yet, ask user to upload one (text only).
+   - If image uploaded, validate if it looks like a crop → if valid, acknowledge with text, else politely ask for a clearer image.
+- Do not mix intent JSON and rotation data JSON in the same message.
+- Respond in the same language as the user.
+                    `
+                }]
+            }
+        });
 
+        const result = await chat.sendMessage(message || "[image uploaded]");
+        const modelResponse = result.response.text();
+        session.history.push({ role: "model", parts: [{ text: modelResponse }] });
 
+        console.log("Model Response:", modelResponse);
+
+        let parsedData = null;
+
+        try {
+            parsedData = JSON.parse(modelResponse);
+        } catch {
+            const jsonMatch = modelResponse.match(/```json\s*({[\s\S]*?})\s*```/) ||
+                modelResponse.match(/({[\s\S]*?})/);
             if (jsonMatch) {
-                const diseaseData = JSON.parse(jsonMatch[1]);
+                try {
+                    parsedData = JSON.parse(jsonMatch[1]);
+                } catch (err) {
+                    console.error("JSON parse error:", err);
+                }
+            }
+        }
 
-                console.log(diseaseData.isValidImage);
+        console.log("Parsed Data:", parsedData);
 
-                if (diseaseData.isValidImage) {
-                    diseaseData.imageUrl = imageUrl;
+        if (!parsedData) {
+            return res.json({
+                success: true,
+                status: "incomplete",
+                message: modelResponse
+            });
+        }
+
+        if (parsedData.intent === 'disease') {
+            if (image) {
+                try {
+                    const imageUrl = await uploadImage(image.buffer);
                     return res.json({
                         success: true,
                         status: "disease_prediction",
-                        data: diseaseData
+                        message: "Image received. Please wait while I analyze the disease.",
+                        imageUrl
                     });
-                } else {
-
-                    return res.json({
-                        success: true,
-                        status: "disease_prediction",
-                        message: "Sorry, I couldn't identify the disease. Please ensure the photo is of a crop."
-                    });
+                } catch (err) {
+                    console.error("Error uploading image:", err);
+                    return res.status(500).json({ success: false, message: "Image upload failed." });
                 }
             } else {
                 return res.json({
                     success: true,
-                    status: "disease_prediction",
-                    message: "Sorry, I couldn't identify the disease. Please ensure the photo is of a crop."
+                    status: "incomplete",
+                    message: parsedData.Message || "Please upload an image of the plant."
                 });
             }
-
-        } catch (error) {
-            console.error("Error in disease prediction:", error);
-            return res.status(500).json({ success: false, message: "An error occurred during disease prediction." });
         }
 
-    } else {
+        if (parsedData.intent === "rotation" || parsedData.status === "complete") {
 
-        session.history.push(userMessage);
+            console.log(parsedData.Language);
 
-        try {
-            const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+            if (parsedData.status === "complete" &&
+                parsedData.hasOwnProperty('N') &&
+                parsedData.hasOwnProperty('P') &&
+                parsedData.hasOwnProperty('K') &&
+                parsedData.hasOwnProperty('pH') &&
+                parsedData.country &&
+                parsedData.state &&
+                parsedData.city &&
+                parsedData.Language) {
 
-            const chat = model.startChat({
-                history: session.history,
-                generationConfig: { temperature: 0.8 },
-                systemInstruction: {
-                    parts: [
-                        {
-                            text: `You are a friendly agricultural assistant. Your sole purpose is to collect seven pieces of information from the user for a crop rotation plan. The user can chat with you in any language, and you must respond in the same language. The required details are: Soil Nitrogen (N) in mg/kg, Soil Phosphorus (P) in mg/kg, Soil Potassium (K) in mg/kg, Soil pH, Country, State, and City.
+                console.log("Complete rotation data received, calling predict function");
 
-As you collect each piece of information, you must do two things:
-1.  **Respond to the user in their language** to keep the conversation going.
-2.  **Append a JSON object to your response** containing all the data collected so far. Use the keys: 'N', 'P', 'K', 'pH', 'country', 'state', and 'city'. If a value is not yet collected, set it to 'null'.
+                delete conversations[sessionId];
 
-When all seven pieces of information have been collected (or the user indicates they don't know a value), your **final and only response** must be the complete JSON object, with no conversational text.`
-                        }
-                    ]
-                }
-            });
+                try {
+                    const predictRes = await predict(
+                        parsedData.N || 0,
+                        parsedData.P || 0,
+                        parsedData.K || 0,
+                        parsedData.pH || 0,
+                        parsedData.country,
+                        parsedData.state,
+                        parsedData.city,
+                    );
 
-            const result = await chat.sendMessage(message);
-            const modelResponse = result.response.text();
-            session.history.push({ role: "model", parts: [{ text: modelResponse }] });
-
-            const jsonMatch = modelResponse.match(/```json\n([\s\S]*?)\n```/);
-
-            if (jsonMatch) {
-                const jsonString = jsonMatch[1];
-                const collectedData = JSON.parse(jsonString);
-                const isComplete = Object.values(collectedData).every(val => val !== null);
-
-                if (isComplete) {
-                    delete conversations[sessionId];
                     return res.json({
                         success: true,
                         status: "complete",
-                        data: collectedData
+                        predictRes
                     });
-                } else {
-                    session.data = collectedData;
-                    const conversationalMessage = modelResponse.replace(jsonMatch[0], '').trim();
-                    return res.json({
-                        success: true,
-                        status: "incomplete",
-                        message: conversationalMessage
+                } catch (predictError) {
+                    console.error("Error in predict function:", predictError);
+                    return res.status(500).json({
+                        success: false,
+                        message: "Error processing crop rotation prediction."
                     });
                 }
             } else {
                 return res.json({
                     success: true,
                     status: "incomplete",
-                    message: modelResponse
+                    message: parsedData.Message || "Please provide the missing information for crop rotation planning."
                 });
             }
-
-        } catch (error) {
-            console.error("Error in AI chat:", error);
-            delete conversations[sessionId];
-            return res.status(500).json({ success: false, message: "Sorry, I couldn't process your request. Please try again later." });
         }
+
+        return res.json({
+            success: true,
+            status: "incomplete",
+            message: parsedData.Message || modelResponse
+        });
+
+    } catch (error) {
+        console.error("Error in chat:", error);
+        delete conversations[sessionId];
+        return res.status(500).json({ success: false, message: "Sorry, I couldn't process your request. Please try again later." });
     }
 });
 
+
+
+
 module.exports = router;
+
+
+// nitrogen shayad 40 phosphorus shayad 20 pottasium shayad 30 ph shayad 5.5 and hum india jharkhand dhanbad m rahete h
+// yaar mere pass ye saab details nhi h to kya iske bina aap kr sakte h help
+// ey tm mera crop rotation m help kr sakte ho
+// hum jharkhand dhanbad m rahete h
+// humko janna h ki mere fasal me kya bimari hai
+
+// mai dhanbad seher m raheta hu mai jharkhand rajya me raheta hu aur mai india desh me raheta hu aur mujhe kuch nhi pata bass tum mujhe fasal chakra de do
+
+// mujhe koi jankari nhi h
