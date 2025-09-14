@@ -14,7 +14,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import botIcon from '@/assets/bot.png';
-import axios from "axios";
+import api from '../../api/api'
+import * as ImagePicker from "expo-image-picker";
 
 type FeatureType = 'greet' | 'weather' | 'disease' | 'market' | 'soil' | 'default';
 type Language = 'en' | 'hi';
@@ -172,23 +173,52 @@ export default function ChatScreen() {
     }, 100);
   };
 
-  // its not fake bot data ---- its fetchBotReply helps to fecth the data from backend
+  // its not fakebotdata ---- its fetchBotReply helps to fetch the data from backend
   const fakeBotReply = async (query: string, lang: Language) => {
     setIsTyping(true);
 
     try {
       const feature = detectFeature(query);
+      console.log(feature);
+
 
       //fecthing the data from backend rest api ...............
-      const res = await axios.post("http://YOUR_BACKEND_URL/api/chat", {
-        userId: dummyAuth.user.id,
-        query,
-        lang,
-        feature,
-      });
+      let data = '';
+      if (feature === "market" || feature === "soil" || feature === "weather" || query.includes('N=') || query.includes('K=') || query.includes('latitude') || query.includes('longitude')) {
+        console.log("Navigate to Crop Rotation Route");
 
-      const data = res.data;
-      console.log(data)
+        try {
+          // Example: "N=20,P=10,K=15,ph=6.5,Country=India,State=Odisha,City=Bhubaneswar"
+          const inputString = query;
+
+          const res = await api.post("/api/crop-rotation", {
+            userId: dummyAuth.user.id,
+            inputString,
+            language: uiLang
+          });
+
+          console.log(res.data);
+          data = res.data;
+        } catch (error) {
+          console.log(error);
+        }
+      }
+      else {
+        console.log("Navigate to default route or show message");
+        //fecthing the normal chatting data from backend rest api ...............
+        try {
+          const res = await api.post("/api/chat", {
+            sessionId: dummyAuth.user.id,
+            message: query,
+            lang,
+          });
+          console.log(res.data);
+          data = res.data;
+        } catch (error) {
+          console.log(error);
+        }
+      }
+      console.log(data);
 
       const botMessage: Message = {
         id: Date.now().toString(),
@@ -217,52 +247,47 @@ export default function ChatScreen() {
     }
   };
 
-  const sendMessage = (content: string) => {
-    if (!content.trim()) return;
-    const lang = detectLang(content);
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      type: "text",
-      content,
-      sender: "user",
-      lang,
-    };
-    setMessages((prev) => [...prev, userMessage]);
-    setUiLang(lang);
-    setText("");
-    scrollToEnd();
-
-    fakeBotReply(content.toLowerCase(), lang);
+  const pickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({ base64: true, quality: 1 });
+    if (!result.canceled) {
+      await sendImage(result.assets[0].base64);
+    }
   };
 
-
   //fetching the data from backend of image.........
-  const sendImage = async () => {
+  const sendImage = async (base64Image: string) => {
+    const tempId = Date.now().toString();
 
-    //how to set image-Url.........?????
-    const imageUrl =
-      'https://cropprotectionnetwork.org/image?s=%2Fimg%2Fhttp%2Fgeneral%2Ftar-northern-southern-foliar-disease-sisson.jpg%2F034d51d6214a9018a973b03e9d35f4e1.jpg&h=0&w=316&fit=contain';
-
-
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      type: 'image',
-      content: imageUrl,
-      sender: 'user',
+    // temporary preview (shows user image before backend responds)
+    const previewMessage: Message = {
+      id: tempId,
+      type: "image",
+      content: `data:image/jpeg;base64,${base64Image}`,
+      sender: "user",
     };
-    setMessages((prev) => [...prev, userMessage]);
+    setMessages((prev) => [...prev, previewMessage]);
     scrollToEnd();
 
     try {
       setIsTyping(true);
 
-      //change it into api of backend of nodejs........
-      const res = await axios.post("http://YOUR_BACKEND_URL/api/analyze-image", {
+      // send to backend
+      const res = await api.post("/api/upload", {
         userId: dummyAuth.user.id,
-        imageUrl,
+        image: base64Image,
+        lang: "en",
       });
 
-      const data = res.data;
+      const imageUrl = res.data.url;
+
+      // now call your crop disease detection API
+      const analysis = await api.post("/api/crop-disease-detection", {
+        userId: dummyAuth.user.id,
+        imageUrl,
+        lang: "en",
+      });
+
+      const data = analysis.data;
 
       const botMessage: Message = {
         id: Date.now().toString(),
@@ -290,6 +315,7 @@ export default function ChatScreen() {
       scrollToEnd();
     }
   };
+
 
 
   // 3. Updated toggleMic logic
@@ -390,6 +416,58 @@ export default function ChatScreen() {
     );
   };
 
+  async function handleSuggestionPress(q, lang: Language) {
+    const query = q.query.toLowerCase();
+    const feature = detectFeature(query);
+    if (query.includes("weather") || query.includes("market")) {
+      console.log("Navigate to Crop Rotation Route");
+      //fecthing the crop rotation data from backend rest api ...............
+
+      try {
+        const res = await api.post(`/api/crop-rotation`, {
+          userId: dummyAuth.user.id,
+          query,
+          lang,
+          feature,
+        });
+
+        console.log(res.data);
+      } catch (error) {
+        console.log(error);
+      }
+    } else if (query.includes("disease")) {
+      console.log("Navigate to Disease Route");
+      //fecthing the crop dieases data from backend rest api ...............
+
+      try {
+        const res = await api.post("/api/crop-disease-detection", {
+          userId: dummyAuth.user.id,
+          query,
+          lang,
+          feature,
+        });
+
+        console.log(res.data);
+      } catch (error) {
+        console.log(error);
+      }
+    } else {
+      console.log("Navigate to default route or show message");
+      //fecthing the normal chatting data from backend rest api ...............
+      console.log(query)
+      try {
+        const res = await api.post("/api/chat", {
+          userId: dummyAuth.user.id,
+          query,
+          lang,
+        });
+        console.log(res.data);
+      } catch (error) {
+        console.log(error);
+      }
+    }
+  }
+
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: '#fff' }}
@@ -428,7 +506,7 @@ export default function ChatScreen() {
                     borderRadius: 12,
                     margin: 4,
                   }}
-                  onPress={() => handleSuggestionPress(q.query)}
+                  onPress={() => handleSuggestionPress(q)}
                 >
                   <Text style={{ color: '#004D40', fontWeight: '500', fontSize: 13 }}>
                     {q.text}
@@ -459,7 +537,7 @@ export default function ChatScreen() {
           backgroundColor: '#fff',
         }}
       >
-        <TouchableOpacity onPress={sendImage} style={{ marginRight: 10 }}>
+        <TouchableOpacity onPress={pickImage} style={{ marginRight: 10 }}>
           <Ionicons name="image-outline" size={28} color="#20C997" />
         </TouchableOpacity>
 
