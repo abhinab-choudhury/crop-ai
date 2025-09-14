@@ -4,26 +4,17 @@ import os from 'node:os';
 import dotenv from 'dotenv';
 import { spawn } from 'node:child_process';
 import { getConversation } from './../helpers/conversationStore.js';
-import multer, { diskStorage, memoryStorage } from 'multer';
+import fs from 'fs';
 import path from 'path';
 
 dotenv.config();
-
-export const storage = diskStorage({
-  destination: (req, file, cb) => cb(null, 'uploads/'),
-  filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname)),
-});
-
-export const upload = multer({
-  storage: memoryStorage(),
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB
-});
 
 const cropDiseaseRouter = Router();
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY is required!');
 const genAI = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
+// ONNX inference function
 async function OnnxInference(abs_image_path) {
   return new Promise((resolve, reject) => {
     const pythonCmd = os.platform() === 'win32' ? 'python' : 'python3';
@@ -32,50 +23,47 @@ async function OnnxInference(abs_image_path) {
     let result = '';
     let error = '';
 
-    onnxProcess.stdout.on('data', (data) => {
-      result += data.toString();
-    });
-
-    onnxProcess.stderr.on('data', (data) => {
-      error += data.toString();
-    });
+    onnxProcess.stdout.on('data', (data) => { result += data.toString(); });
+    onnxProcess.stderr.on('data', (data) => { error += data.toString(); });
 
     onnxProcess.on('close', (code) => {
-      if (code !== 0) {
-        reject(new Error(`Python onnx-inference failed with code ${code}, error: ${error}`));
-      } else {
-        resolve(result.trim());
-      }
+      if (code !== 0) reject(new Error(`Python onnx-inference failed with code ${code}, error: ${error}`));
+      else resolve(result.trim());
     });
   });
 }
 
-cropDiseaseRouter.post('/', upload.single('image'), async (req, res) => {
-  try {
-    const imageFile = req.file;
-    const { sessionId, language = 'English' } = req.body;
+// Ensure uploads folder exists
+const UPLOAD_DIR = path.join(process.cwd(), 'uploads');
+if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR);
 
-    if (!sessionId || !imageFile) {
-      return res
-        .status(400)
-        .json({ success: false, message: 'Session ID and image are required.' });
+// Crop disease endpoint
+cropDiseaseRouter.post('/', async (req, res) => {
+  try {
+    const { sessionId, image, language = 'English' } = req.body;
+
+    if (!sessionId || !image) {
+      return res.status(400).json({ success: false, message: 'Session ID and base64 image are required.' });
     }
 
     const session = getConversation(sessionId);
 
-    const absImagePath = imageFile.path;
+    // Save base64 image to file
+    const fileName = `${Date.now()}_${sessionId}.jpg`;
+    const filePath = path.join(UPLOAD_DIR, fileName);
+    fs.writeFileSync(filePath, Buffer.from(image, 'base64'));
 
-    // Run ONNX model to predict disease
-    const prediction = await OnnxInference(absImagePath);
+    // Run ONNX model
+    const prediction = await OnnxInference(filePath);
     const [plant, disease] = prediction.split('___');
 
-    // Add user message to session history
+    // Add user message
     session.history.push({
       role: 'user',
       content: `Image uploaded: ${plant} with suspected disease ${disease}`,
     });
 
-    // Query Gemini AI for concise disease info
+    // Query Gemini AI
     const aiResponse = await genAI.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: [
@@ -99,7 +87,7 @@ You are an expert in agricultural diseases 🌱.
 
     const aiText = aiResponse.text;
 
-    // Add AI response to conversation history
+    // Add AI response to session
     session.history.push({ role: 'assistant', content: aiText });
 
     return res.json({

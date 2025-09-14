@@ -8,115 +8,122 @@ import { getConversation } from './../helpers/conversationStore.js';
 const cropRotationRouter = Router();
 const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-async function predict(N, P, K, ph, country, state, city, latitude, longitude, language, session) {
-  try {
-    let coords = { latitude, longitude };
-    if (!coords.latitude || !coords.longitude) {
-      coords = await getLocation(country, state, city);
-    }
-
-    if (!coords.latitude || !coords.longitude) {
-      throw new Error('Could not find coordinates for the specified location.');
-    }
-
-    const climateData = await getHistoricalClimateData(coords.latitude, coords.longitude);
-    const soilApiData = await getSoilData(coords.latitude, coords.longitude);
-
-    const prompt = `
-        You are a world-class agronomist and soil scientist AI. Your task is to create an optimal, sustainable, and profitable 12-month crop rotation schedule.
-
-        **Data Profile:**
-        - Farm Location: ${city}, ${state}, ${country}
-        - Farmer's Soil Measurement: N=${N}, P=${P}, K=${K}, pH=${ph}
-        - Soil Profile (ISRIC): pH=${soilApiData.ph || 'N/A'}, Clay=${soilApiData.clayContent || 'N/A'}, SOC=${soilApiData.organicCarbon || 'N/A'}
-        - Climate (Last 12 Months): Temp=${climateData.avgTemperature?.toFixed(2) || 'N/A'}°C, Humidity=${climateData.avgHumidity?.toFixed(2) || 'N/A'}%, Precipitation=${climateData.totalPrecipitation?.toFixed(2) || 'N/A'}mm
-
-        **Output Requirements:**
-        - Strict JSON, no markdown
-        - Language: ${language}
-        - Respond concisely and practically
-    `;
-
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-
-    // Include previous conversation for multi-turn context
-    const contents = [
-      {
-        role: 'system',
-        parts: [{ text: 'You are an expert in crop rotation and sustainable agriculture.' }],
-      },
-      ...session.history.map((msg) => ({ role: msg.role, parts: [{ text: msg.content }] })),
-      { role: 'user', parts: [{ text: prompt }] },
-    ];
-
-    const result = await model.generateContent(contents);
-    const text = result.response.text();
-
-    // Save AI response to session
-    session.history.push({ role: 'assistant', content: text });
-
-    return text;
-  } catch (err) {
-    console.error('Error in predict:', err);
-    throw err;
+const predict = async (N, P, K, ph, country, state, city, language) => {
+  const locationData = await getLocation(country, state, city);
+  if (!locationData.latitude || !locationData.longitude) {
+    return { success: false, message: "Could not find coordinates for the specified location." };
   }
+  const climateData = await getHistoricalClimateData(locationData.latitude, locationData.longitude);
+  const soilApiData = await getSoilData(locationData.latitude, locationData.longitude);
+  console.log("humidity " + climateData.avgHumidity + " temperature " + climateData.avgTemperature + " precipitation " + climateData.totalPrecipitation);
+  console.log(soilApiData);
+  console.log("ph " + soilApiData.ph + " nitrogen " + soilApiData.nitrogen + " clay " + soilApiData.clayContent + " soc " + soilApiData.organicCarbon);
+  try {
+    const prompt = `
+You are a world-class agronomist and soil scientist AI. Your task is to create an optimal, sustainable, and profitable 12-month crop rotation schedule based on the provided data.
+*Data Profile:*
+- *Farm Location:* ${city}, ${state}, ${country}
+- *Farmer's Soil Measurement:* Nitrogen (N): ${N} mg/kg, Phosphorus (P): ${P} mg/kg, Potassium (K): ${K} mg/kg, Soil pH: ${ph}
+- *ISRIC World Soil Profile:* Predicted pH: ${soilApiData.ph || 'N/A'}, Predicted Clay Content: ${soilApiData.clayContent || 'N/A'} g/kg, Predicted Soil Organic Carbon: ${soilApiData.organicCarbon || 'N/A'} dg/kg
+- *Annual Climate Averages (Based on Last 12 Months):* Avg Temperature: ${climateData.avgTemperature?.toFixed(2) || 'N/A'} °C, Avg Humidity: ${climateData.avgHumidity?.toFixed(2) || 'N/A'} %, Total Annual Precipitation: ${climateData.totalPrecipitation?.toFixed(2) || 'N/A'} mm
+*Your Task:*
+Based on ALL the data above, generate a detailed 12-month crop rotation plan.
+*Output Format Instructions:*
+You MUST return the response as a single, valid JSON object. Do not include any text, explanations, or markdown formatting (like \\\`json) before or after the JSON object.
+The JSON object must follow this exact structure with the language ${language} not always in English:
+{
+  "rotationPlan": [
+    {
+      "season": "string (e.g., 'Kharif (Monsoon)')",
+      "months": "string (e.g., 'June - October')",
+      "crop": {
+        "name": "string (Name of the recommended crop)",
+        "variety": "string (A suitable variety, if applicable)"
+      },
+      "justification": "string (Concise explanation why this crop fits)",
+      "keyActivities": [
+        "string (3-4 key farming activities)"
+      ]
+    }
+  ],
+  "overallSummary": "string (Brief, encouraging summary of the plan)"
 }
+*Rules:*
+- JSON keys stay in English
+- All string values must be in ${language}
+- Include 2-3 seasons with 4 activities each
+- Ensure valid JSON output
+`;
+    // Calling Ollama with llama3.2:3b
+    const response = await fetch("http://localhost:11434/api/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "llama3.2:3b",
+        prompt: prompt,
+        stream: false
+      })
+    });
+    const data = await response.json();
+    console.log(data.response);
+    return data.response;
+  } catch (error) {
+    console.error("Error generating content from Ollama llama3.2:3b:", error);
+    return error;
+  }
+};
 
 cropRotationRouter.post('/', async (req, res) => {
   try {
-    const {
-      sessionId,
-      nitrogen,
-      phosphorus,
-      potassium,
-      ph,
-      country,
-      state,
-      city,
-      latitude,
-      longitude,
-      language = 'English',
-    } = req.body;
+    const { sessionId, inputString, language = 'English' } = req.body;
 
-    if (
-      !sessionId ||
-      !nitrogen ||
-      !phosphorus ||
-      !potassium ||
-      !ph ||
-      !country ||
-      !state ||
-      !city
-    ) {
-      return res
-        .status(400)
-        .json({ success: false, message: 'Missing required fields or sessionId.' });
+    if (!sessionId || !inputString) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing sessionId or inputString.',
+      });
+    }
+
+    // Parse input string
+    const inputObj = {};
+    inputString.split(',').forEach((pair) => {
+      const [key, value] = pair.split('=').map((v) => v.trim());
+      if (key && value) inputObj[key.toLowerCase()] = value;
+    });
+
+    const { n, p, k, ph, country, state, city } = inputObj;
+
+    // Validate all required inputs
+    if (!n || !p || !k || !ph || !country || !state || !city) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required inputs in the string. Required: N, P, K, pH, Country, State, City.',
+      });
     }
 
     const session = getConversation(sessionId);
     session.history.push({
       role: 'user',
-      content: `Request crop rotation: N=${nitrogen}, P=${phosphorus}, K=${potassium}, pH=${ph}, Location=${city}, ${state}, ${country}`,
+      content: `Request crop rotation with inputs: ${inputString}`,
     });
 
     const result = await predict(
-      nitrogen,
-      phosphorus,
-      potassium,
-      ph,
+      Number(n),
+      Number(p),
+      Number(k),
+      Number(ph),
       country,
       state,
       city,
-      latitude,
-      longitude,
-      language,
-      session,
+      language
     );
 
     return res.json({ success: true, data: result });
   } catch (error) {
+    console.error('Error in crop rotation API:', error);
     return res.status(500).json({ success: false, message: error.message });
   }
 });
+
 
 export default cropRotationRouter;

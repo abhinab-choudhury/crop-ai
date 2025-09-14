@@ -16,9 +16,17 @@ app.use(
     credentials: true,
   }),
 );
+app.use(express.json({ limit: "10mb" })); // allow large base64 payloads
 
-app.use(express.json({ limit: '16kb' }));
+app.use("/uploads", express.static("uploads"));
+
+// app.use(express.json({ limit: '16kb' }));
 app.use(express.urlencoded({ extended: true, limit: '16kb' }));
+
+app.get("/health", (req, res) => {
+  res.json({ status: "ok", server: "Node.js running" });
+});
+
 
 app.use('/api/crop-rotation', cropRotationRouter);
 app.use('/api/crop-disease-detection', cropDiseaseRouter);
@@ -29,6 +37,6 @@ app.get('', (_req, res) => {
 
 const PORT = process.env.PORT;
 
-app.listen(PORT, () => {
+app.listen(PORT,'0.0.0.0', () => {
   console.log(`🚀 Server is listening on port ${PORT}`);
 });
