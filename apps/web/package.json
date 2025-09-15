@@ -9,28 +9,33 @@
     "typecheck": "react-router typegen && tsc"
   },
   "dependencies": {
-    "radix-ui": "^1.4.2",
     "@react-router/fs-routes": "^7.6.1",
     "@react-router/node": "^7.6.1",
     "@react-router/serve": "^7.6.1",
     "@tanstack/react-form": "^1.12.0",
+    "@tanstack/react-query": "^5.85.5",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "framer-motion": "^12.23.12",
     "isbot": "^5.1.28",
     "lucide-react": "^0.511.0",
     "next-themes": "^0.4.6",
+    "radix-ui": "^1.4.2",
     "react": "19.0.0",
     "react-dom": "19.0.0",
+    "react-hot-toast": "^2.6.0",
+    "react-icons": "^5.5.0",
     "react-router": "^7.6.1",
     "sonner": "^2.0.3",
     "tailwind-merge": "^3.3.0",
+    "tailwind-variants": "^3.1.1",
     "tw-animate-css": "^1.3.2",
-    "zod": "^4.0.2",
-    "@tanstack/react-query": "^5.85.5"
+    "zod": "^4.0.2"
   },
   "devDependencies": {
     "@react-router/dev": "^7.6.1",
     "@tailwindcss/vite": "^4.1.8",
+    "@tanstack/react-query-devtools": "^5.85.5",
     "@types/node": "^20",
     "@types/react": "^19.0.12",
     "@types/react-dom": "^19.0.4",
@@ -38,7 +43,6 @@
     "tailwindcss": "^4.1.8",
     "typescript": "^5.8.3",
     "vite": "^6.3.5",
-    "vite-tsconfig-paths": "^5.1.4",
-    "@tanstack/react-query-devtools": "^5.85.5"
+    "vite-tsconfig-paths": "^5.1.4"
   }
 }
