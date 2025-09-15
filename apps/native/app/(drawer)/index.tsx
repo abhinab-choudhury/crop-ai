@@ -14,8 +14,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import botIcon from '@/assets/bot.png';
-import api from '../../api/api'
-import * as ImagePicker from "expo-image-picker";
+import api from '../../api/api';
+import * as ImagePicker from 'expo-image-picker';
 
 type FeatureType = 'greet' | 'weather' | 'disease' | 'market' | 'soil' | 'default';
 type Language = 'en' | 'hi';
@@ -181,20 +181,27 @@ export default function ChatScreen() {
       const feature = detectFeature(query);
       console.log(feature);
 
-
       //fecthing the data from backend rest api ...............
       let data = '';
-      if (feature === "market" || feature === "soil" || feature === "weather" || query.includes('N=') || query.includes('K=') || query.includes('latitude') || query.includes('longitude')) {
-        console.log("Navigate to Crop Rotation Route");
+      if (
+        feature === 'market' ||
+        feature === 'soil' ||
+        feature === 'weather' ||
+        query.includes('N=') ||
+        query.includes('K=') ||
+        query.includes('latitude') ||
+        query.includes('longitude')
+      ) {
+        console.log('Navigate to Crop Rotation Route');
 
         try {
           // Example: "N=20,P=10,K=15,ph=6.5,Country=India,State=Odisha,City=Bhubaneswar"
           const inputString = query;
 
-          const res = await api.post("/api/crop-rotation", {
+          const res = await api.post('/api/crop-rotation', {
             userId: dummyAuth.user.id,
             inputString,
-            language: uiLang
+            language: uiLang,
           });
 
           console.log(res.data);
@@ -202,12 +209,11 @@ export default function ChatScreen() {
         } catch (error) {
           console.log(error);
         }
-      }
-      else {
-        console.log("Navigate to default route or show message");
+      } else {
+        console.log('Navigate to default route or show message');
         //fecthing the normal chatting data from backend rest api ...............
         try {
-          const res = await api.post("/api/chat", {
+          const res = await api.post('/api/chat', {
             sessionId: dummyAuth.user.id,
             message: query,
             lang,
@@ -222,23 +228,23 @@ export default function ChatScreen() {
 
       const botMessage: Message = {
         id: Date.now().toString(),
-        type: data.type || "text",
+        type: data.type || 'text',
         content: data.content,
-        sender: "bot",
+        sender: 'bot',
         feature,
         lang,
       };
 
       setMessages((prev) => [...prev, botMessage]);
     } catch (err) {
-      console.error("Error fetching bot reply:", err);
+      console.error('Error fetching bot reply:', err);
       setMessages((prev) => [
         ...prev,
         {
           id: Date.now().toString(),
-          type: "text",
-          content: "couldn’t connect to the server.",
-          sender: "bot",
+          type: 'text',
+          content: 'couldn’t connect to the server.',
+          sender: 'bot',
         },
       ]);
     } finally {
@@ -261,9 +267,9 @@ export default function ChatScreen() {
     // temporary preview (shows user image before backend responds)
     const previewMessage: Message = {
       id: tempId,
-      type: "image",
+      type: 'image',
       content: `data:image/jpeg;base64,${base64Image}`,
-      sender: "user",
+      sender: 'user',
     };
     setMessages((prev) => [...prev, previewMessage]);
     scrollToEnd();
@@ -272,42 +278,42 @@ export default function ChatScreen() {
       setIsTyping(true);
 
       // send to backend
-      const res = await api.post("/api/upload", {
+      const res = await api.post('/api/upload', {
         userId: dummyAuth.user.id,
         image: base64Image,
-        lang: "en",
+        lang: 'en',
       });
 
       const imageUrl = res.data.url;
 
       // now call your crop disease detection API
-      const analysis = await api.post("/api/crop-disease-detection", {
+      const analysis = await api.post('/api/crop-disease-detection', {
         userId: dummyAuth.user.id,
         imageUrl,
-        lang: "en",
+        lang: 'en',
       });
 
       const data = analysis.data;
 
       const botMessage: Message = {
         id: Date.now().toString(),
-        type: data.type || "text",
+        type: data.type || 'text',
         content: data.content,
-        sender: "bot",
+        sender: 'bot',
         lang: uiLang,
-        feature: "disease",
+        feature: 'disease',
       };
 
       setMessages((prev) => [...prev, botMessage]);
     } catch (err) {
-      console.error("Image upload error:", err);
+      console.error('Image upload error:', err);
       setMessages((prev) => [
         ...prev,
         {
           id: Date.now().toString(),
-          type: "text",
-          content: "Couldn’t analyze image.",
-          sender: "bot",
+          type: 'text',
+          content: 'Couldn’t analyze image.',
+          sender: 'bot',
         },
       ]);
     } finally {
@@ -315,8 +321,6 @@ export default function ChatScreen() {
       scrollToEnd();
     }
   };
-
-
 
   // 3. Updated toggleMic logic
   const toggleMic = () => {
@@ -419,8 +423,8 @@ export default function ChatScreen() {
   async function handleSuggestionPress(q, lang: Language) {
     const query = q.query.toLowerCase();
     const feature = detectFeature(query);
-    if (query.includes("weather") || query.includes("market")) {
-      console.log("Navigate to Crop Rotation Route");
+    if (query.includes('weather') || query.includes('market')) {
+      console.log('Navigate to Crop Rotation Route');
       //fecthing the crop rotation data from backend rest api ...............
 
       try {
@@ -435,12 +439,12 @@ export default function ChatScreen() {
       } catch (error) {
         console.log(error);
       }
-    } else if (query.includes("disease")) {
-      console.log("Navigate to Disease Route");
+    } else if (query.includes('disease')) {
+      console.log('Navigate to Disease Route');
       //fecthing the crop dieases data from backend rest api ...............
 
       try {
-        const res = await api.post("/api/crop-disease-detection", {
+        const res = await api.post('/api/crop-disease-detection', {
           userId: dummyAuth.user.id,
           query,
           lang,
@@ -452,11 +456,11 @@ export default function ChatScreen() {
         console.log(error);
       }
     } else {
-      console.log("Navigate to default route or show message");
+      console.log('Navigate to default route or show message');
       //fecthing the normal chatting data from backend rest api ...............
-      console.log(query)
+      console.log(query);
       try {
-        const res = await api.post("/api/chat", {
+        const res = await api.post('/api/chat', {
           userId: dummyAuth.user.id,
           query,
           lang,
