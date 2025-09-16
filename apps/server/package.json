@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "type": "module",
   "scripts": {
     "dev": "nodemon index.js",
     "start": "node index.js",
@@ -17,10 +16,12 @@
     "@google/genai": "^1.19.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
+    "ejs": "^3.1.10",
     "express": "^5.1.0",
     "mongoose": "^8.18.1",
     "multer": "^2.0.2",
-    "nodemon": "^3.1.10"
+    "nodemon": "^3.1.10",
+    "ollama": "^0.5.18"
   },
   "devDependencies": {
     "prettier": "^3.6.2"

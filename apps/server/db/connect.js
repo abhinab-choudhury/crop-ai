@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
+import env from '../utils/env';
 
-await mongoose.connect(process.env.DATABASE_URL || '').catch((error) => {
+await mongoose.connect(env.DATABASE_URL).catch((error) => {
   console.log('Error connecting to database:', error);
 });
 
