@@ -13,6 +13,7 @@
     "dev:native": "turbo -F native dev",
     "dev:web": "turbo -F web dev",
     "dev:server": "turbo -F server dev",
+    "dev:ml-server": "turbo -F ml-server dev",
     "prepare": "husky"
   },
   "devDependencies": {

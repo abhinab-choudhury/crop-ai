@@ -1,4 +1,12 @@
-export default async function crop_prediction({ N, P, K, pH, rainfall, latitude, longitude }) {
+export default async function crop_prediction({
+  nitrogen,
+  phosphorous,
+  pottasium,
+  ph,
+  rainfall,
+  lat,
+  lon,
+}) {
   try {
     const response = await fetch(`${process.env.ML_SERVER}/crop-recommend`, {
       method: 'POST',
@@ -6,13 +14,13 @@ export default async function crop_prediction({ N, P, K, pH, rainfall, latitude,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        N,
-        P,
-        K,
-        pH,
+        nitrogen,
+        phosphorous,
+        pottasium,
+        ph,
         rainfall,
-        latitude,
-        longitude,
+        lat,
+        lon,
       }),
     });
 
@@ -25,21 +33,19 @@ export default async function crop_prediction({ N, P, K, pH, rainfall, latitude,
     return {
       success: true,
       prediction: {
-        predictedClass: result.predicted_class,
-        plantName: result.plant_name,
-        diseaseStatus: result.disease_status,
-        confidence: result.confidence,
-        isConfident: result.is_confident,
-        modelUsed: result.model_used,
-        inferenceType: result.inference_type,
+        plant_name: result.prediction,
       },
-      message: result.is_confident
-        ? `Based on your soil and climate data, the recommended crop is **${result.plant_name}** with ${(
-            result.confidence * 100
-          ).toFixed(1)}% confidence.`
-        : `The model suggests **${result.plant_name}**, but confidence is low (${(
-            result.confidence * 100
-          ).toFixed(1)}%). Please validate with an expert.`,
+      inputs: {
+        nitrogen: result.inputs.nitrogen,
+        phosphorous: result.inputs.phosphorous,
+        pottasium: result.inputs.pottasium,
+        temperature: result.inputs.temperature,
+        humidity: result.inputs.humidity,
+        ph: result.inputs.ph,
+        rainfall: result.inputs.rainfall,
+      },
+      location: { lat: result.location.lat, lon: result.location.lon },
+      message: `Based on your soil and climate data, the recommended crop is **${result.prediction}**`,
     };
   } catch (error) {
     console.error('Crop prediction error:', error);

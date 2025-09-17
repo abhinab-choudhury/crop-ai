@@ -1,0 +1,7 @@
+{
+  "name": "ml-server",
+  "scripts": {
+    "dev": "uv run run.py",
+    "start": "uv run run.py"
+  }
+}

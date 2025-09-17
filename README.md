@@ -30,7 +30,8 @@ The API is running at [http://localhost:3000](http://localhost:3000).
 crop-ai/
 ├── apps/
 │   ├── native/      # Mobile application (React Native, Expo)
-│   └── server/      # Backend API (Express)
+│   ├── ml-server/   # ML Server API (Fast API)
+│   ├── server/      # Backend API (Express)
 │   └── web/         # React Web App (Vite)
 ```
 
@@ -40,5 +41,6 @@ crop-ai/
 - `pnpm build`: Build all applications
 - `pnpm dev:native`: Start the React Native/Expo development server
 - `pnpm dev:web`: Start only the web application
+- `pnpm dev:ml-server`: Start only the ML Fast API server
 - `pnpm dev:server`: Start only the server
 - `pnpm check-types`: Check TypeScript types across all apps

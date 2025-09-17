@@ -1,4 +1,11 @@
-export default async function get_crop_rotation({ N, P, K, pH, state, city }) {
+export default async function get_crop_rotation({
+  nitrogen,
+  phosphorous,
+  pottasium,
+  ph,
+  state,
+  city,
+}) {
   const country = 'India';
   const locationData = await getLocation(country, state, city);
   if (!locationData.latitude || !locationData.longitude) {
@@ -15,7 +22,7 @@ export default async function get_crop_rotation({ N, P, K, pH, state, city }) {
       You are a world-class agronomist and soil scientist AI. Your task is to create an optimal, sustainable, and profitable 12-month crop rotation schedule based on the provided data..
       **Data Profile:**
       - **Farm Location:** ${city}, ${state}, ${country}
-      - **Farmer's Soil Measurement:** Nitrogen (N): ${N} mg/kg, Phosphorus (P): ${P} mg/kg, Potassium (K): ${K} mg/kg, Soil pH: ${pH}
+      - **Farmer's Soil Measurement:** Nitrogen (N): ${N} mg/kg, Phosphorus (P): ${phosphorous} mg/kg, Potassium (K): ${pottasium} mg/kg, Soil pH: ${ph}
       - **ISRIC World Soil Profile:** Predicted pH: ${soilApiData.ph || 'N/A'}, Predicted Clay Content: ${soilApiData.clayContent || 'N/A'} g/kg, Predicted Soil Organic Carbon: ${soilApiData.organicCarbon || 'N/A'} dg/kg
       - **Annual Climate Averages (Based on Last 12 Months):** Avg Temperature: ${climateData.avgTemperature?.toFixed(2) || 'N/A'} °C, Avg Humidity: ${climateData.avgHumidity?.toFixed(2) || 'N/A'} %, Total Annual Precipitation: ${climateData.totalPrecipitation?.toFixed(2) || 'N/A'} mm
 

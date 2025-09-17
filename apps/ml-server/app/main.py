@@ -1,16 +1,11 @@
-import numpy as np
-import joblib
-import xgboost.compat as xgb_compat
-import os
-import io
 from fastapi import FastAPI, UploadFile, File, HTTPException
+from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image
-from torchvision import transforms
-import onnxruntime as ort
+from typing import Optional
 
-from app.utils.weather_fetch import weather_fetch
-from app.utils.onnx_inference import predict_image
+from app.utils.resnet_inference import predict_image
+from app.utils.xgboost_inference import predict_crop
 
 app = FastAPI(
     title="Crop AI | ML Server",
@@ -26,57 +21,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-class XGBoostLabelEncoder:
-    def __init__(self, *args, **kwargs):
-        pass
-
-xgb_compat.XGBoostLabelEncoder = XGBoostLabelEncoder
-
-CROP_MODEL_PATH = os.path.join(BASE_DIR, "models", "crop-recommendation", "XGBoost.pkl")
-print(CROP_MODEL_PATH)
-crop_recommendation_model = None
-if os.path.exists(CROP_MODEL_PATH):
-    try:
-        crop_recommendation_model = joblib.load(CROP_MODEL_PATH)
-        print("✅ XGBoost Crop Recommendation model loaded successfully.")
-    except Exception as e:
-        print(f"❌ Error loading XGBoost model: {e}")
-else:
-    print(f"⚠️ Warning: XGBoost model file not found at {CROP_MODEL_PATH}")
-
-crop_mapping = {
-    0: "rice",
-    3: "maize",
-    5: "chickpea",
-    12: "kidneybeans",
-    13: "pigeonpeas",
-    14: "mothbeans",
-    15: "mungbean",
-    18: "blackgram",
-    24: "lentil",
-    60: "pomegranate",
-    61: "banana",
-    62: "mango",
-    63: "grapes",
-    66: "watermelon",
-    67: "muskmelon",
-    69: "apple",
-    74: "orange",
-    75: "papaya",
-    88: "coconut",
-    93: "cotton",
-    94: "jute",
-    95: "coffee"
-}
-
-
-transform = transforms.Compose([
-    transforms.Resize((256, 256)),
-    transforms.ToTensor(),
-])
-
+class CropInput(BaseModel):
+    nitrogen: int
+    phosphorous: int
+    pottasium: int
+    ph: float
+    rainfall: float
+    lat: float
+    lon: float
 
 def validate_file(file: UploadFile):
     if not file.content_type.startswith("image/"):
@@ -95,36 +47,24 @@ async def run_prediction(file: UploadFile, model_name: str):
 async def root():
     return {"message": "Welcome to the Crop AI | API"}
 
-@app.post("/crop-recommend", tags=["Crop Recommendaion"])
-def recommend_crop(nitrogen: int, phosphorous: int, pottasium: int, ph: float, rainfall: float, lat: float, lon: float):
-    if crop_recommendation_model is None:
-        raise RuntimeError("Crop recommendation model is not available.")
-
-    # Get weather data
+@app.post("/crop-recommend", tags=["Crop Recommendation"])
+def recommend_crop(data: CropInput):
     try:
-        weather = weather_fetch(lat, lon)
-        if weather is None:
-            raise ConnectionError("Weather data unavailable for the given coordinates.")
-        temperature, humidity = weather
-    except Exception as e:
-        raise ConnectionError(f"Weather service error: {e}") from e
-
-    # Make prediction
-    try:
-        data = np.array([[nitrogen, phosphorous, pottasium, temperature, humidity, ph, rainfall]])
-        prediction = crop_recommendation_model.predict(data)[0]
-    except Exception as e:
-        raise ValueError(f"Failed to make a crop prediction: {e}") from e
-
-    return {
-        # "prediction": str(crop_mapping[int(prediction)]),
-        "prediction": str(prediction),
-        "inputs": {
-            "nitrogen": nitrogen, "phosphorous": phosphorous, "pottasium": pottasium,
-            "temperature": temperature, "humidity": humidity, "ph": ph, "rainfall": rainfall,
-        },
-        "location": {"lat": lat, "lon": lon}
-    }
+        nitrogen = data.nitrogen
+        phosphorous = data.phosphorous
+        pottasium = data.pottasium
+        ph = data.ph
+        rainfall = data.rainfall
+        lat = data.lat
+        lon = data.lon
+    except ValueError as e:
+        return {
+            "success": False,
+            "error": f"Invalid input format: {str(e)}",
+            "message": "Please provide correct numeric values."
+        }
+    
+    return predict_crop(nitrogen, phosphorous, pottasium, ph, rainfall, lat, lon)
 
 @app.post("/predict/resnet9", tags=["Disease Detection"])
 async def predict_resnet9(file: UploadFile = File(...)):

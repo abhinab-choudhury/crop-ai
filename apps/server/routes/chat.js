@@ -58,25 +58,15 @@ const tools = [
       parameters: {
         type: 'object',
         properties: {
-          N: { type: 'number', description: 'Nitrogen content in soil' },
-          P: { type: 'number', description: 'Phosphorus content in soil' },
-          K: { type: 'number', description: 'Potassium content in soil' },
-          pH: { type: 'number', description: 'Soil pH value' },
+          nitrogen: { type: 'number', description: 'Nitrogen content in soil' },
+          phosphorous: { type: 'number', description: 'Phosphorus content in soil' },
+          pottasium: { type: 'number', description: 'Potassium content in soil' },
+          ph: { type: 'number', description: 'Soil pH value' },
           rainfall: { type: 'number', description: 'Expected rainfall (mm)' },
-          latitude: { type: 'number', description: 'Latitude of farm' },
-          longitude: { type: 'number', description: 'Longitude of farm' },
+          lat: { type: 'number', description: 'Latitude of farm' },
+          lon: { type: 'number', description: 'Longitude of farm' },
         },
-        required: [
-          'N',
-          'P',
-          'K',
-          'temperature',
-          'humidity',
-          'pH',
-          'rainfall',
-          'latitude',
-          'longitude',
-        ],
+        required: ['nitrogen', 'phosphorous', 'pottasium', 'ph', 'rainfall', 'lat', 'lon'],
       },
     },
   },
@@ -125,6 +115,7 @@ const systemMessage = {
 
     By default, you are a warm and approachable farming expert with vast knowledge of cultivating crops and farm management.  
     If you find the query not related to any tools, chat in a natural, helpful, and conversational manner.
+    Don't use tool calling unless asked for by the user.
   `,
 };
 
@@ -141,6 +132,7 @@ chatRouter.post('/', async (req, res) => {
       model: 'llama3.2:3b',
       messages: [systemMessage, ...history],
       tools,
+      temperature: 0,
     });
 
     console.log('Llama Response : ', JSON.stringify(response, null, 2));
