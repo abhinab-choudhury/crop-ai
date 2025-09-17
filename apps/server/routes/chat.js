@@ -3,12 +3,13 @@ import express from 'express';
 import crop_disease_prediction from '../utils/crop-disease-prediction.js';
 import crop_prediction from '../utils/crop-prediction.js';
 import get_crop_rotation from '../utils/get-crop-rotation.js';
+import { sendResponse } from '../utils/response-handler.js';
 
 const chatRouter = express.Router();
 
 const functions = {
   get_crop_rotation: async (args) => await get_crop_rotation(args),
-  crop_disease_prediction: async (args) => await crop_disease_prediction(args.image),
+  crop_disease_prediction: async (args) => await crop_disease_prediction(args.file_url),
   crop_prediction: async (args) => await crop_prediction(args),
 };
 
@@ -39,13 +40,13 @@ const tools = [
     function: {
       name: 'crop_disease_prediction',
       description:
-        'Analyzes a crop photo for diseases. Use when the user uploads or links an image asking about crop health.',
+        'Analyzes a crop photo for diseases. Use when the user give a image link asking about crop health.',
       parameters: {
         type: 'object',
         properties: {
-          image: { type: 'file', description: 'Crop image' },
+          file_url: { type: 'url', description: 'Crop image url' },
         },
-        required: ['image'],
+        required: ['file_url'],
       },
     },
   },
@@ -124,9 +125,17 @@ history.push(systemMessage);
 
 chatRouter.post('/', async (req, res) => {
   try {
-    const { message } = req.body;
+    const { message, image_path } = req.body;
 
-    history.push({ role: 'user', content: message });
+    if (!message) {
+      return res.json(sendResponse(res, 400, 'message field is missing'));
+    }
+    let userContent = message;
+    if (image_path) {
+      userContent += `\n\n[Image provided: ${image_path}]`;
+    }
+
+    history.push({ role: 'user', content: userContent });
 
     const response = await Ollama.chat({
       model: 'llama3.2:3b',
@@ -181,10 +190,10 @@ chatRouter.post('/', async (req, res) => {
 
     history.push({ role: 'assistant', content: finalResponse });
 
-    res.json({ finalResponse, history });
+    res.json(sendResponse(res, 200, 'AI assistant response', { finalResponse, history }));
   } catch (err) {
     console.error('Chat error:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    res.json(sendResponse(res, 500, 'Internal server error', err.message || ''));
   }
 });
 
