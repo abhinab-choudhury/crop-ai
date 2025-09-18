@@ -1,15 +1,15 @@
 {
   "expo": {
-    "name": "my-better-t-app",
-    "slug": "my-better-t-app",
+    "name": "Crop AI",
+    "slug": "Crop AI",
     "version": "1.0.0",
-    "scheme": "my-better-t-app",
+    "scheme": "Crop AI",
     "web": {
       "bundler": "metro",
       "output": "static",
       "favicon": "./assets/favicon.png"
     },
-    "plugins": ["expo-router", "expo-secure-store", "expo-web-browser"],
+    "plugins": ["expo-router", "expo-secure-store", "expo-web-browser", "onnxruntime-react-native"],
     "experiments": {
       "typedRoutes": true,
       "tsconfigPaths": true

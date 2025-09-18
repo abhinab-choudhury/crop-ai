@@ -7,7 +7,7 @@ import GoogleSignIn from '@/components/google-sign-in';
 import { useAuth, useUser } from '@clerk/clerk-expo';
 import { Redirect } from 'expo-router';
 
-export default function Login() {
+export default function LoginScreen() {
   const { isSignedIn } = useAuth();
   const { user } = useUser();
   if (isSignedIn || user) {

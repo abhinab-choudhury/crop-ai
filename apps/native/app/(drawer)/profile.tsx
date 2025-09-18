@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useUser } from '@clerk/clerk-expo';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Redirect } from 'expo-router';
 
 type EditableRowProps = {
   label: string;
@@ -52,7 +53,7 @@ const EditableRow: React.FC<EditableRowProps> = ({
   );
 };
 
-export default function Profile() {
+export default function ProfileScreen() {
   const { user } = useUser();
 
   const [phone, setPhone] = useState<string>('Not provided');
@@ -66,6 +67,10 @@ export default function Profile() {
   const [isEditingCrops, setIsEditingCrops] = useState<boolean>(false);
 
   const { isLoaded } = useUser();
+
+  if (!user?.primaryEmailAddress?.emailAddress) {
+    return <Redirect href="/(drawer)/login" />;
+  }
 
   useEffect(() => {
     const loadLocalData = async () => {

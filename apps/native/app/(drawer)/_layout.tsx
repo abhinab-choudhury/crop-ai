@@ -5,10 +5,10 @@ import { DefaultTheme, Theme } from '@react-navigation/native';
 import { NAV_THEME, THEME } from '@/lib/constants';
 import { DrawerContentScrollView, DrawerItemList } from '@react-navigation/drawer';
 import { Image, Text, View } from 'react-native';
-import logo from '@/assets/icon.png';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SignedIn, useUser } from '@clerk/clerk-expo';
 import { SignOutButton } from '@/components/signout-btn';
+import logo from '@/assets/icon.png';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -84,13 +84,12 @@ export default function DrawerLayout() {
         name="index"
         options={{
           title: 'Chat',
+          headerTitle: () => <Text className="font-poppinsMedium text-xl">Chat</Text>,
           drawerLabel: ({ focused, color }) => (
             <Text
+              className="font-poppinsMedium text-xl"
               style={{
-                fontFamily: 'Poppins_500Medium',
                 color: color,
-                fontSize: 16,
-                fontWeight: focused ? '600' : '400',
               }}
             >
               Chat
@@ -101,16 +100,55 @@ export default function DrawerLayout() {
         }}
       />
       <Drawer.Screen
+        name="diagnosis"
+        options={{
+          title: 'Plant Diagnosis',
+          headerTitle: () => <Text className="font-poppinsMedium text-xl">Plant Diagnosis</Text>,
+          drawerLabel: ({ color }) => (
+            <Text
+              className="font-poppinsMedium text-xl"
+              style={{
+                color: color,
+              }}
+            >
+              Plant Diagnosis
+            </Text>
+          ),
+          drawerIcon: ({ focused, color, size }) =>
+            tabIcon(focused, 'paper-plane', 'paper-plane-outline', size, color),
+        }}
+      />
+      <Drawer.Screen
+        name="recommendation"
+        options={{
+          title: 'Crop Recommendation',
+          headerTitle: () => (
+            <Text className="font-poppinsMedium text-xl">Crop Recommendation</Text>
+          ),
+          drawerLabel: ({ color }) => (
+            <Text
+              className="font-poppinsMedium text-xl"
+              style={{
+                color: color,
+              }}
+            >
+              Crop Recommendation
+            </Text>
+          ),
+          drawerIcon: ({ focused, color, size }) =>
+            tabIcon(focused, 'leaf', 'leaf-outline', size, color),
+        }}
+      />
+      <Drawer.Screen
         name="profile"
         options={{
           title: 'Profile',
+          headerTitle: () => <Text className="font-poppinsMedium text-xl">Profile</Text>,
           drawerLabel: ({ focused, color }) => (
             <Text
+              className="font-poppinsMedium text-xl"
               style={{
-                fontFamily: 'Poppins_500Medium',
                 color: color,
-                fontSize: 16,
-                fontWeight: focused ? '600' : '400',
               }}
             >
               Profile
@@ -124,13 +162,12 @@ export default function DrawerLayout() {
         name="about"
         options={{
           title: 'About',
+          headerTitle: () => <Text className="font-poppinsMedium text-xl">About</Text>,
           drawerLabel: ({ focused, color }) => (
             <Text
+              className="font-poppinsMedium text-xl"
               style={{
-                fontFamily: 'Poppins_500Medium',
                 color: color,
-                fontSize: 16,
-                fontWeight: focused ? '600' : '400',
               }}
             >
               About

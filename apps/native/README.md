@@ -22,6 +22,14 @@ Make sure you have the following installed:
 
 Make sure your backend server is running and accessible from the app.
 
+
+## Commands
+
+```bash
+npx expo prebuild
+eas build --profile development --platform android
+```
+
 ## 📸 Screenshots
 
 *Add screenshots of your app here for better documentation.*

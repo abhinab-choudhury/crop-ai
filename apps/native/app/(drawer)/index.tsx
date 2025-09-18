@@ -14,8 +14,10 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import botIcon from '@/assets/bot.png';
-import api from '../../api/api';
 import * as ImagePicker from 'expo-image-picker';
+import { useUser } from '@clerk/clerk-expo';
+import { router } from 'expo-router';
+import api from '@/lib/axiosInstance';
 
 type FeatureType = 'greet' | 'weather' | 'disease' | 'market' | 'soil' | 'default';
 type Language = 'en' | 'hi';
@@ -128,10 +130,13 @@ const RecordingIndicator = ({ isRecording }: { isRecording: boolean }) => {
 };
 
 export default function ChatScreen() {
+  const { user } = useUser();
+
+  const flatListRef = useRef<FlatList>(null);
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const flatListRef = useRef<FlatList>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [uiLang, setUiLang] = useState<Language>('en');
 
@@ -157,6 +162,7 @@ export default function ChatScreen() {
     const hindiChars = /[अ-हऀ-ॿ]/;
     return hindiChars.test(query) ? 'hi' : 'en';
   };
+
   const detectFeature = (query: string): FeatureType => {
     const q = query.toLowerCase();
     if (q.includes('hello') || q.includes('hi') || q.includes('नमस्ते')) return 'greet';
@@ -167,6 +173,7 @@ export default function ChatScreen() {
     if (q.includes('soil') || q.includes('मिट्टी') || q.includes('voice')) return 'soil';
     return 'default';
   };
+
   const scrollToEnd = () => {
     setTimeout(() => {
       flatListRef.current?.scrollToEnd({ animated: true });
@@ -263,7 +270,6 @@ export default function ChatScreen() {
   //fetching the data from backend of image.........
   const sendImage = async (base64Image: string) => {
     const tempId = Date.now().toString();
-
     // temporary preview (shows user image before backend responds)
     const previewMessage: Message = {
       id: tempId,
@@ -321,7 +327,6 @@ export default function ChatScreen() {
       scrollToEnd();
     }
   };
-
   // 3. Updated toggleMic logic
   const toggleMic = () => {
     animateMic();
@@ -457,7 +462,6 @@ export default function ChatScreen() {
       }
     } else {
       console.log('Navigate to default route or show message');
-      //fecthing the normal chatting data from backend rest api ...............
       console.log(query);
       try {
         const res = await api.post('/api/chat', {
@@ -471,6 +475,12 @@ export default function ChatScreen() {
       }
     }
   }
+
+  useEffect(() => {
+    if (!user?.primaryEmailAddress?.emailAddress) {
+      router.replace('/(drawer)/login');
+    }
+  }, [user]);
 
   return (
     <KeyboardAvoidingView
@@ -531,67 +541,73 @@ export default function ChatScreen() {
 
       <RecordingIndicator isRecording={isRecording} />
 
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          padding: 10,
-          borderTopWidth: 1,
-          borderColor: '#eee',
-          backgroundColor: '#fff',
-        }}
-      >
-        <TouchableOpacity onPress={pickImage} style={{ marginRight: 10 }}>
-          <Ionicons name="image-outline" size={28} color="#20C997" />
-        </TouchableOpacity>
-
+      <View style={{ flexDirection: 'column' }}>
+        {/* Chat Input Bar */}
         <View
           style={{
-            flex: 1,
             flexDirection: 'row',
             alignItems: 'center',
-            backgroundColor: '#f8f8f8',
-            borderRadius: 25,
-            paddingHorizontal: 10,
+            padding: 10,
+            borderTopWidth: 1,
+            borderColor: '#eee',
+            backgroundColor: '#fff',
           }}
         >
-          <TouchableOpacity
-            onPress={() => setUiLang(uiLang === 'en' ? 'hi' : 'en')}
-            style={{ padding: 8 }}
-          >
-            <Text style={{ color: '#00796B', fontWeight: 'bold', fontSize: 16 }}>
-              {uiLang.toUpperCase()}
-            </Text>
+          <TouchableOpacity onPress={pickImage} style={{ marginRight: 10 }}>
+            <Ionicons name="image-outline" size={28} color="#20C997" />
           </TouchableOpacity>
-          <TextInput
-            value={text}
-            onChangeText={setText}
-            placeholder="Type a message..."
-            style={{ flex: 1, paddingVertical: 10, fontSize: 16, marginLeft: 5 }}
-          />
-          <TouchableOpacity onPress={toggleMic} style={{ marginRight: 12 }}>
-            <Animated.View
-              style={{
-                transform: [{ scale: micScale }],
-                padding: 4,
-                borderRadius: 99,
-                backgroundColor: isRecording ? '#b22222' : '#05998c',
-              }}
-            >
-              <Ionicons name={'mic'} size={20} color={'#fff'} />
-            </Animated.View>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => sendMessage(text)}
-            disabled={!text.trim()}
+
+          <View
             style={{
-              padding: 8,
-              borderRadius: 99,
-              backgroundColor: text.trim() ? '#14B8A6' : '#D1D5DB',
+              flex: 1,
+              flexDirection: 'row',
+              alignItems: 'center',
+              backgroundColor: '#f8f8f8',
+              borderRadius: 25,
+              paddingHorizontal: 10,
             }}
           >
-            <Ionicons name="send" size={20} color={text.trim() ? '#fff' : '#6b7280'} />
-          </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setUiLang(uiLang === 'en' ? 'hi' : 'en')}
+              style={{ padding: 8 }}
+            >
+              <Text style={{ color: '#00796B', fontWeight: 'bold', fontSize: 16 }}>
+                {uiLang.toUpperCase()}
+              </Text>
+            </TouchableOpacity>
+
+            <TextInput
+              value={text}
+              onChangeText={setText}
+              placeholder="Type a message..."
+              style={{ flex: 1, paddingVertical: 10, fontSize: 16, marginLeft: 5 }}
+            />
+
+            <TouchableOpacity onPress={toggleMic} style={{ marginRight: 12 }}>
+              <Animated.View
+                style={{
+                  transform: [{ scale: micScale }],
+                  padding: 4,
+                  borderRadius: 99,
+                  backgroundColor: isRecording ? '#b22222' : '#05998c',
+                }}
+              >
+                <Ionicons name={'mic'} size={20} color={'#fff'} />
+              </Animated.View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => sendMessage(text)}
+              disabled={!text.trim()}
+              style={{
+                padding: 8,
+                borderRadius: 99,
+                backgroundColor: text.trim() ? '#14B8A6' : '#D1D5DB',
+              }}
+            >
+              <Ionicons name="send" size={20} color={text.trim() ? '#fff' : '#6b7280'} />
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </KeyboardAvoidingView>
