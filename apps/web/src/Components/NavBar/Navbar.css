@@ -50,7 +50,7 @@ body {
   padding: 12px 20px;
 }
 
-/* Logo Styles */
+
 .logo {
   display: flex;
   align-items: center;
@@ -367,4 +367,5 @@ html {
 .mobile-menu-toggle:focus {
   outline: 2px solid var(--green-400);
   outline-offset: 2px;
+
 }
