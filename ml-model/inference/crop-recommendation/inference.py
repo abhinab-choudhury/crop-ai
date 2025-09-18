@@ -35,7 +35,7 @@ xgb_compat.XGBoostLabelEncoder = XGBoostLabelEncoder
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-CROP_MODEL_PATH = os.path.join(BASE_DIR, "models", "XGBoost.pkl")
+CROP_MODEL_PATH = os.path.join(BASE_DIR, "..", "..", "models", "crop-recommendation", "XGBoost.pkl")
 print(CROP_MODEL_PATH)
 crop_recommendation_model = None
 if os.path.exists(CROP_MODEL_PATH):
