@@ -23,20 +23,19 @@ export default function Navbar() {
         </div>
         
         <ul className={`nav-links ${isMobileMenuOpen ? 'nav-links-mobile' : ''}`}>
-          <li><a href="#features" className="nav-link"></a></li>
-          <li><a href="#demo" className="nav-link"></a></li>
-          <li><a href="#about" className="nav-link"></a></li>
-          <li><a href="#support" className="nav-link"></a></li>
           <li className="nav-cta-mobile">
             <a href="#download" className="btn-nav">
               <span className="btn-icon"></span>
-              Download App
+              Download Now
             </a>
           </li>
         </ul>
 
         <div className="nav-actions">
-         
+          <a href="#download" className="btn-nav btn-nav-desktop">
+            <span className="btn-icon"></span>
+            Download 
+          </a>
           
           <button 
             className={`mobile-menu-toggle ${isMobileMenuOpen ? 'active' : ''}`}
