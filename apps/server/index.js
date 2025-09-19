@@ -33,8 +33,8 @@ app.post('/upload', upload.single('file'), (req, res) => {
 
   res.json(
     sendResponse(res, 200, 'File uploaded successfully', {
-      filePath: `/uploads/${req.file.filename}`,
-      originalName: req.file.originalname,
+      file_path: `uploads/${req.file.filename}`,
+      original_name: req.file.originalname,
     }),
   );
 });

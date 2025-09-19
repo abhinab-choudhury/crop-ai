@@ -23,13 +23,13 @@ const tools = [
       parameters: {
         type: 'object',
         properties: {
-          N: { type: 'number', description: 'Soil Nitrogen content' },
-          P: { type: 'number', description: 'Soil Phosphorus content' },
-          K: { type: 'number', description: 'Soil Potassium content' },
-          pH: { type: 'number', description: 'Soil pH level' },
-          state: { type: 'string', description: 'State in India' },
-          city: { type: 'string', description: 'City in India' },
-          language: { type: 'string', description: 'Language of the user’s query' },
+          N: { type: 'number' },
+          P: { type: 'number' },
+          K: { type: 'number' },
+          pH: { type: 'number' },
+          state: { type: 'string' },
+          city: { type: 'string' },
+          language: { type: 'string' },
         },
         required: ['state', 'city', 'language'],
       },
@@ -39,13 +39,10 @@ const tools = [
     type: 'function',
     function: {
       name: 'crop_disease_prediction',
-      description:
-        'Analyzes a crop photo for diseases. Use when the user give a image link asking about crop health.',
+      description: 'Analyzes a crop photo for diseases.',
       parameters: {
         type: 'object',
-        properties: {
-          file_url: { type: 'url', description: 'Crop image url' },
-        },
+        properties: { file_url: { type: 'string' } },
         required: ['file_url'],
       },
     },
@@ -55,17 +52,17 @@ const tools = [
     function: {
       name: 'crop_prediction',
       description:
-        "Predicts the best crop to grow right now based on soil nutrients, climate, and location. Use this when user asks: 'What should I grow now?' or provides soil + weather details.",
+        'Predicts the best crop to grow now based on soil nutrients, climate, and location.',
       parameters: {
         type: 'object',
         properties: {
-          nitrogen: { type: 'number', description: 'Nitrogen content in soil' },
-          phosphorous: { type: 'number', description: 'Phosphorus content in soil' },
-          pottasium: { type: 'number', description: 'Potassium content in soil' },
-          ph: { type: 'number', description: 'Soil pH value' },
-          rainfall: { type: 'number', description: 'Expected rainfall (mm)' },
-          lat: { type: 'number', description: 'Latitude of farm' },
-          lon: { type: 'number', description: 'Longitude of farm' },
+          nitrogen: { type: 'number' },
+          phosphorous: { type: 'number' },
+          pottasium: { type: 'number' },
+          ph: { type: 'number' },
+          rainfall: { type: 'number' },
+          lat: { type: 'number' },
+          lon: { type: 'number' },
         },
         required: ['nitrogen', 'phosphorous', 'pottasium', 'ph', 'rainfall', 'lat', 'lon'],
       },
@@ -73,118 +70,95 @@ const tools = [
   },
 ];
 
+// SYSTEM PROMPT (strict rules for tool calling)
 const systemMessage = {
   role: 'system',
   content: `
-    You are a friendly and knowledgeable agricultural AI assistant.
+    You are a friendly AI agricultural assistant.
 
-    You have 3 main tool functions:
-
-    1. **Crop Rotation (get_crop_rotation)**  
-      • Generates a 12-month crop rotation plan.  
-      • Trigger: Use only when the user explicitly asks about crop planning, multi-season schedules, or long-term farming strategies.  
-
-    2. **Crop Recommendation (crop_prediction)**  
-      • Predicts the best crop to grow right now using soil nutrients, weather, and location data.  
-      • Trigger: Use only when the user directly asks “what should I grow now?” or provides soil/weather/location info specifically for deciding what to plant.  
-
-    3. **Crop Disease Detection (crop_disease_prediction)**  
-      • Detects crop diseases from an uploaded or linked image.  
-      • Trigger: Use only when the user provides an image or explicitly asks about visible symptoms or crop health concerns.  
-
-    ---
-
-    ### Tool Usage Rules
-    - Call a tool **only if the user’s intent clearly matches one of the triggers above**.  
-    - Do **not** call a tool automatically unless the user explicitly requests it, or their input clearly provides all necessary parameters.  
-    - If the query is **partially related** (e.g., “my soil is bad” without details), first **ask clarifying questions** to collect missing information instead of calling the tool.  
-    - If a tool call is required, respond **only with valid JSON** in this format:
-
-    {
-      "tool": "<tool_name>",
-      "arguments": { ... }
-    }
-
-    - Never include explanations, text, or Markdown around the JSON when making a tool call.  
-    - Only return plain text answers when a tool is **not** required.  
-    - When answering in plain text, **do not mention tools, triggers, or system rules**.  
-    - Avoid mechanical openings like “this is not related to a tool call.” Instead, respond naturally as a friendly farming expert.  
-
-    ### Example
-    ❌ Bad: “It seems like the fertilizers you asked about are not directly related to a specific tool call.”  
-    ✅ Good: “Potatoes are heavy feeders! For healthy growth, they need plenty of nitrogen, phosphorus, and potassium…”  
-
-    By default, you are a warm and approachable farming expert with vast knowledge of cultivating crops and farm management.  
-    If you find the query not related to any tools, chat in a natural, helpful, and conversational manner.
-    Don't use tool calling unless asked for by the user.
+    TOOLS RULES:
+    1. Only call a tool if the user's intent clearly matches one of the tools.
+    2. Never call a tool if required parameters are missing.
+    3. If parameters are missing, ask clarifying questions.
+    4. Tool call format MUST be JSON only:
+      {"tool": "<tool_name>", "arguments": {...}}
+    5. Do not hallucinate missing info.
+    6. Only respond with text if tool call is not needed.
   `,
 };
 
-const history = [];
-history.push(systemMessage);
+const history = [systemMessage];
+
+// PRE-CHECK: decide if a tool should be called
+function getToolToCall(message, image_uri) {
+  if (/rotation|plan|schedule|multi-season/i.test(message)) return 'get_crop_rotation';
+  if (/what should I grow/i.test(message) && /soil|weather|location/i.test(message))
+    return 'crop_prediction';
+  if (image_uri) return 'crop_disease_prediction';
+  return null;
+}
+
+// VALIDATE required parameters
+function validateToolParams(toolName, body) {
+  const toolDef = tools.find((t) => t.function.name === toolName);
+  if (!toolDef) return { valid: false, missing: [] };
+
+  const required = toolDef.function.parameters.required || [];
+  const missing = required.filter(
+    (param) => !(param in body) && !(param === 'file_url' && body.image_uri),
+  );
+  return { valid: missing.length === 0, missing };
+}
 
 chatRouter.post('/', async (req, res) => {
   try {
-    const { message, image_path } = req.body;
+    const { message, image_uri, ...rest } = req.body;
+    console.log('req.body: ', message, image_uri);
+    if (!message) return res.json(sendResponse(res, 400, 'message field is missing'));
 
-    if (!message) {
-      return res.json(sendResponse(res, 400, 'message field is missing'));
-    }
-    let userContent = message;
-    if (image_path) {
-      userContent += `\n\n[Image provided: ${image_path}]`;
-    }
-
+    const userContent = image_uri ? `${message}\n\n[Image provided: ${image_uri}]` : message;
     history.push({ role: 'user', content: userContent });
+
+    const toolName = getToolToCall(message, image_uri);
+    let toolsToSend = [];
+
+    if (toolName) {
+      const { valid, missing } = validateToolParams(toolName, { ...rest, image_uri });
+      if (!valid) {
+        const responseText = `I need more info to assist you: ${missing.join(', ')}`;
+        history.push({ role: 'assistant', content: responseText });
+        return res.json(
+          sendResponse(res, 200, 'AI assistant response', { finalResponse: responseText, history }),
+        );
+      }
+      toolsToSend = tools; // only include tools if needed
+    }
 
     const response = await Ollama.chat({
       model: 'llama3.2:3b',
-      messages: [systemMessage, ...history],
-      tools,
+      messages: history,
+      tools: toolsToSend,
       temperature: 0,
     });
 
-    console.log('Llama Response : ', JSON.stringify(response, null, 2));
-    let toolCalls = response.message.tool_calls;
     let finalResponse = response.message.content;
 
-    if (toolCalls && toolCalls.length > 0) {
-      const toolCall = toolCalls[0];
-      const toolName = toolCall.function.name;
+    if (response.message.tool_calls?.length) {
+      const toolCall = response.message.tool_calls[0];
+      const toolCallName = toolCall.function.name;
       const toolArgs = toolCall.function.arguments || {};
 
-      const toolDef = tools.find((tool) => tool.function.name === toolName);
-      if (!toolDef) {
-        finalResponse = `⚠️ Unknown tool: ${toolName}. Please try again.`;
-      } else {
-        const requiredInfo = toolDef.function.parameters.required || [];
-        const missingInfo = requiredInfo.filter((param) => !toolArgs[param]);
+      if (functions[toolCallName]) {
+        const toolResult = await functions[toolCallName](toolArgs);
+        history.push({ role: 'assistant', tool_calls: [toolCall] });
+        history.push({ role: 'tool', content: JSON.stringify(toolResult), name: toolCallName });
 
-        if (missingInfo.length > 0) {
-          finalResponse = `I can help with that! Please provide the following details: ${missingInfo.join(', ')}.`;
-        } else {
-          try {
-            const toolResult = await functions[toolName](toolArgs);
-
-            history.push({ role: 'assistant', tool_calls: toolCalls });
-            history.push({
-              role: 'tool',
-              content: JSON.stringify(toolResult),
-              name: toolName,
-            });
-
-            const finalModelResponse = await Ollama.chat({
-              model: 'llama3.2:3b',
-              messages: [systemMessage, ...history],
-              tools,
-            });
-
-            finalResponse = finalModelResponse.message.content;
-          } catch (err) {
-            console.error('Tool execution error:', err);
-            finalResponse = '⚠️ Sorry, something went wrong while running that tool.';
-          }
-        }
+        const finalModelResponse = await Ollama.chat({
+          model: 'llama3.2:3b',
+          messages: history,
+          tools: toolsToSend,
+        });
+        finalResponse = finalModelResponse.message.content;
       }
     }
 

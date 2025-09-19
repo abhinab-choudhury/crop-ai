@@ -19,6 +19,7 @@ const storage = multer.diskStorage({
 
 const fileFilter = (_req, file, cb) => {
   const allowedTypes = [
+    // Image
     'image/jpeg',
     'image/jpg',
     'image/png',
@@ -26,10 +27,18 @@ const fileFilter = (_req, file, cb) => {
     'image/webp',
     'image/bmp',
     'image/tiff',
-    'image/x-icon', // .ico
-    'image/heic', // iPhone HEIC
-    'image/heif', // iPhone HEIF
-    'image/svg+xml', // .svg
+    'image/x-icon',
+    'image/heic',
+    'image/heif',
+    'image/svg+xml',
+    // Audio
+    'audio/mpeg',
+    'audio/wav',
+    'audio/x-wav',
+    'audio/mp4',
+    'audio/aac',
+    'audio/ogg',
+    'audio/webm',
   ];
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
