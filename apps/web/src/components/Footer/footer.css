@@ -60,7 +60,7 @@
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: linear-gradient(135deg, rgba(34, 197, 94, .18), rgba(34, 197, 94, .04));
+  background: white;
   box-shadow: 0 8px 24px rgba(34, 197, 94, .22)
 }
 

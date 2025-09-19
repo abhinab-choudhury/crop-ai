@@ -18,7 +18,7 @@ export default function Navbar() {
     <nav className={`navbar ${isScrolled ? 'navbar-scrolled' : ''}`}>
       <div className="nav-inner">
         <div className="logo">
-          <span className="logo-icon">🌱</span>
+          <img className="logo-icon" src="icon.png" alt="crop-ai-logo" />
           <span className="logo-text">CropAI</span>
         </div>
 

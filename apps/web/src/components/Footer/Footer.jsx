@@ -59,9 +59,9 @@ export default function Footer() {
             variants={{ hidden: {}, show: { transition: { staggerChildren: 0.15 } } }}
           >
             {[
-              { n: 30, suffix: '%', t: 'Increase in crop yield prediction accuracy' },
+              { n: 15, suffix: '%', t: 'Increase in crop yield prediction accuracy' },
               { n: 95, suffix: '%', t: 'Disease detection accuracy with AI analysis' },
-              { n: 50, suffix: '+', t: 'Crop varieties supported in our system' },
+              { n: 20, suffix: '+', t: 'Crop varieties supported in our system' },
             ].map((it, i) => (
               <motion.article key={i} className="impact-card" variants={fade}>
                 <div className="impact-number">
@@ -84,7 +84,7 @@ export default function Footer() {
           >
             <motion.div className="col brand-col" variants={fade}>
               <div className="logo">
-                <span className="logo-mark">🌱</span>
+                <img className="logo-mark" src="icon.png" alt="crop-ai-logo" />
                 <span className="logo-text">CropAI</span>
               </div>
               <p className="desc">
