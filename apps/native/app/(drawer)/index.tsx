@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import {
   FlatList,
   KeyboardAvoidingView,
@@ -10,80 +10,32 @@ import {
   Image,
   ActivityIndicator,
   Animated,
-  Easing,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import botIcon from '@/assets/bot.png';
 import * as ImagePicker from 'expo-image-picker';
 import { useUser } from '@clerk/clerk-expo';
 import { router } from 'expo-router';
 import api from '@/lib/axiosInstance';
-
-type FeatureType = 'greet' | 'weather' | 'disease' | 'market' | 'soil' | 'default';
-type Language = 'en' | 'hi';
+import botIcon from '@/assets/bot.png';
+import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 
 type Message = {
   id: string;
   type: 'text' | 'image' | 'audio';
   content: string;
   sender: 'user' | 'bot';
-  feature?: FeatureType;
-  lang?: Language;
 };
 
-// --- Dummy Auth State ---
-const dummyAuth = {
-  isAuthenticated: true,
-  user: { name: 'Farmer Ram', id: '123' },
+const welcomeContent = {
+  title: 'Welcome to Crop AI 🌱',
+  subtitle: 'Try asking one of these questions:',
+  questions: [
+    { text: "📍 What's the best crop for Bhubaneswar?", query: 'weather for Bhubaneswar' },
+    { text: '🦠 Detect crop disease from an image', query: 'detect disease' },
+    { text: '📈 Which crop gives best profit this season?', query: 'market prices' },
+  ],
 };
 
-// (Bot features and welcome content remain the same)
-const botFeatures: Record<Language, Record<FeatureType, string>> = {
-  hi: {
-    greet: 'नमस्ते किसान भाई 👋 मैं आपका खेती सहायक हूँ।',
-    weather: '📍 भुवनेश्वर मौसम:\n🌦 32°C, हल्की बदली।\n🌱 सुझाई गई फसलें: धान, मक्का, टमाटर।',
-    disease:
-      '🩺 पौधों की सेहत: मक्का की पत्तियों पर धब्बे → फफूंद रोग। कृपया इलाज के लिए नीम तेल का छिड़काव करें।',
-    market: '📊 बाज़ार अपडेट: धान ↑12%, मक्का स्थिर।',
-    soil: '🧪 मिट्टी की जाँच: आपकी आवाज़ के अनुसार, मिट्टी में नाइट्रोजन की कमी है। यूरिया डालें।',
-    default: '🤖 मैंने सही से समझा नहीं। आप मौसम 🌦, रोग 🦠, बाज़ार 📊 पूछ सकते हैं।',
-  },
-  en: {
-    greet: "Hey 👋 I'm your farm assistant.",
-    weather:
-      '📍 Bhubaneswar Weather:\n🌦 32°C, partly cloudy.\n🌱 Suggested crops: Rice, Maize, Tomato.',
-    disease:
-      '🩺 Plant Health: Leaf spots detected on maize → fungal disease. Please spray neem oil for treatment.',
-    market: '📊 Market Update: Rice ↑12%, Maize stable.',
-    soil: '🧪 Soil Health: Based on your voice note, the soil seems nitrogen-deficient. Add compost or urea.',
-    default: '🤖 I didn’t quite get that. Try asking: Weather, Market, Soil, or Disease.',
-  },
-};
-const welcomeContent: Record<
-  Language,
-  { title: string; subtitle: string; questions: { text: string; query: string }[] }
-> = {
-  en: {
-    title: 'Welcome to Crop AI 🌱',
-    subtitle: 'Try asking one of these questions:',
-    questions: [
-      { text: "📍 What's the best crop for Bhubaneswar?", query: 'weather for Bhubaneswar' },
-      { text: '🦠 Detect crop disease from an image', query: 'detect disease' },
-      { text: '📈 Which crop gives best profit this season?', query: 'market prices' },
-    ],
-  },
-  hi: {
-    title: 'क्रॉप AI में आपका स्वागत है 🌱',
-    subtitle: 'इनमें से कोई एक प्रश्न पूछ कर देखें:',
-    questions: [
-      { text: '📍 भुवनेश्वर के लिए सबसे अच्छी फसल कौन सी है?', query: 'भुवनेश्वर का मौसम' },
-      { text: '🦠 तस्वीर से फसल रोग का पता लगाएं', query: 'रोग का पता लगाएं' },
-      { text: '📈 इस सीजन में कौन सी फसल सबसे अच्छा मुनाफा देती है?', query: 'बाजार का भाव' },
-    ],
-  },
-};
-
-// 2. New Recording Animation Component
 const RecordingIndicator = ({ isRecording }: { isRecording: boolean }) => {
   const opacityAnim = useRef(new Animated.Value(1)).current;
 
@@ -91,18 +43,8 @@ const RecordingIndicator = ({ isRecording }: { isRecording: boolean }) => {
     if (isRecording) {
       Animated.loop(
         Animated.sequence([
-          Animated.timing(opacityAnim, {
-            toValue: 0.2,
-            duration: 700,
-            useNativeDriver: true,
-            easing: Easing.ease,
-          }),
-          Animated.timing(opacityAnim, {
-            toValue: 1,
-            duration: 700,
-            useNativeDriver: true,
-            easing: Easing.ease,
-          }),
+          Animated.timing(opacityAnim, { toValue: 0.2, duration: 700, useNativeDriver: true }),
+          Animated.timing(opacityAnim, { toValue: 1, duration: 700, useNativeDriver: true }),
         ]),
       ).start();
     } else {
@@ -112,7 +54,6 @@ const RecordingIndicator = ({ isRecording }: { isRecording: boolean }) => {
   }, [isRecording]);
 
   if (!isRecording) return null;
-
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 15, marginBottom: 5 }}>
       <Animated.View
@@ -131,356 +72,224 @@ const RecordingIndicator = ({ isRecording }: { isRecording: boolean }) => {
 
 export default function ChatScreen() {
   const { user } = useUser();
-
   const flatListRef = useRef<FlatList>(null);
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
-  const [uiLang, setUiLang] = useState<Language>('en');
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [imageUri, setImageUri] = useState<string | null>(null);
+  const { startRecording, stopRecording, uploadAudio } = useAudioRecorder();
 
   const micScale = useRef(new Animated.Value(1)).current;
-  const animateMic = () => {
+
+  const animateMic = () =>
     Animated.sequence([
-      Animated.timing(micScale, {
-        toValue: 1.4,
-        duration: 200,
-        useNativeDriver: true,
-        easing: Easing.ease,
-      }),
-      Animated.timing(micScale, {
-        toValue: 1,
-        duration: 200,
-        useNativeDriver: true,
-        easing: Easing.ease,
-      }),
+      Animated.timing(micScale, { toValue: 1.4, duration: 200, useNativeDriver: true }),
+      Animated.timing(micScale, { toValue: 1, duration: 200, useNativeDriver: true }),
     ]).start();
-  };
 
-  const detectLang = (query: string): Language => {
-    const hindiChars = /[अ-हऀ-ॿ]/;
-    return hindiChars.test(query) ? 'hi' : 'en';
-  };
+  const scrollToEnd = () =>
+    setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
 
-  const detectFeature = (query: string): FeatureType => {
-    const q = query.toLowerCase();
-    if (q.includes('hello') || q.includes('hi') || q.includes('नमस्ते')) return 'greet';
-    if (q.includes('weather') || q.includes('climate') || q.includes('मौसम')) return 'weather';
-    if (q.includes('disease') || q.includes('image') || q.includes('रोग')) return 'disease';
-    if (q.includes('market') || q.includes('profit') || q.includes('बाज़ार') || q.includes('भाव'))
-      return 'market';
-    if (q.includes('soil') || q.includes('मिट्टी') || q.includes('voice')) return 'soil';
-    return 'default';
-  };
+  const fetchReply = useCallback(
+    async (query: string, image_uri: string) => {
+      setIsTyping(true);
+      try {
+        const res = await api.post('/api/chat', { userId: user?.id, message: query, image_uri });
+        const data = res.data.data;
 
-  const scrollToEnd = () => {
-    setTimeout(() => {
-      flatListRef.current?.scrollToEnd({ animated: true });
-    }, 100);
-  };
-
-  // its not fakebotdata ---- its fetchBotReply helps to fetch the data from backend
-  const fakeBotReply = async (query: string, lang: Language) => {
-    setIsTyping(true);
-
-    try {
-      const feature = detectFeature(query);
-      console.log(feature);
-
-      //fecthing the data from backend rest api ...............
-      let data = '';
-      if (
-        feature === 'market' ||
-        feature === 'soil' ||
-        feature === 'weather' ||
-        query.includes('N=') ||
-        query.includes('K=') ||
-        query.includes('latitude') ||
-        query.includes('longitude')
-      ) {
-        console.log('Navigate to Crop Rotation Route');
-
-        try {
-          // Example: "N=20,P=10,K=15,ph=6.5,Country=India,State=Odisha,City=Bhubaneswar"
-          const inputString = query;
-
-          const res = await api.post('/api/crop-rotation', {
-            userId: dummyAuth.user.id,
-            inputString,
-            language: uiLang,
-          });
-
-          console.log(res.data);
-          data = res.data;
-        } catch (error) {
-          console.log(error);
-        }
-      } else {
-        console.log('Navigate to default route or show message');
-        //fecthing the normal chatting data from backend rest api ...............
-        try {
-          const res = await api.post('/api/chat', {
-            sessionId: dummyAuth.user.id,
-            message: query,
-            lang,
-          });
-          console.log(res.data);
-          data = res.data;
-        } catch (error) {
-          console.log(error);
-        }
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now().toString(),
+            type: 'text',
+            content: data?.finalResponse || '⚠️ No response',
+            image_uri,
+            sender: 'bot',
+          },
+        ]);
+      } catch (err) {
+        console.error(err);
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now().toString(),
+            type: 'text',
+            content: 'Couldn’t connect to server.',
+            sender: 'bot',
+          },
+        ]);
+      } finally {
+        setIsTyping(false);
+        setImageUri(null);
+        scrollToEnd();
       }
-      console.log(data);
-
-      const botMessage: Message = {
-        id: Date.now().toString(),
-        type: data.type || 'text',
-        content: data.content,
-        sender: 'bot',
-        feature,
-        lang,
-      };
-
-      setMessages((prev) => [...prev, botMessage]);
-    } catch (err) {
-      console.error('Error fetching bot reply:', err);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now().toString(),
-          type: 'text',
-          content: 'couldn’t connect to the server.',
-          sender: 'bot',
-        },
-      ]);
-    } finally {
-      setIsTyping(false);
-      scrollToEnd();
-    }
-  };
+    },
+    [user],
+  );
 
   const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({ base64: true, quality: 1 });
+    const result = await ImagePicker.launchImageLibraryAsync({ quality: 1 });
     if (!result.canceled) {
-      await sendImage(result.assets[0].base64);
-    }
-  };
-
-  //fetching the data from backend of image.........
-  const sendImage = async (base64Image: string) => {
-    const tempId = Date.now().toString();
-    // temporary preview (shows user image before backend responds)
-    const previewMessage: Message = {
-      id: tempId,
-      type: 'image',
-      content: `data:image/jpeg;base64,${base64Image}`,
-      sender: 'user',
-    };
-    setMessages((prev) => [...prev, previewMessage]);
-    scrollToEnd();
-
-    try {
-      setIsTyping(true);
-
-      // send to backend
-      const res = await api.post('/api/upload', {
-        userId: dummyAuth.user.id,
-        image: base64Image,
-        lang: 'en',
-      });
-
-      const imageUrl = res.data.url;
-
-      // now call your crop disease detection API
-      const analysis = await api.post('/api/crop-disease-detection', {
-        userId: dummyAuth.user.id,
-        imageUrl,
-        lang: 'en',
-      });
-
-      const data = analysis.data;
-
-      const botMessage: Message = {
-        id: Date.now().toString(),
-        type: data.type || 'text',
-        content: data.content,
-        sender: 'bot',
-        lang: uiLang,
-        feature: 'disease',
+      const file = {
+        uri: result.assets[0].uri,
+        name: 'upload.jpg',
+        type: 'image/jpeg',
       };
 
-      setMessages((prev) => [...prev, botMessage]);
-    } catch (err) {
-      console.error('Image upload error:', err);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now().toString(),
-          type: 'text',
-          content: 'Couldn’t analyze image.',
-          sender: 'bot',
-        },
-      ]);
-    } finally {
-      setIsTyping(false);
-      scrollToEnd();
+      const formData = new FormData();
+      formData.append('file', file as any);
+
+      try {
+        setIsUploadingImage(true);
+        const uploadRes = await api.post('/upload', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+
+        const uploadedUrl = uploadRes.data?.data?.file_path;
+        if (!uploadedUrl) throw new Error('No file_url from server');
+        setImageUri(`${process.env.EXPO_PUBLIC_SERVER_URL}/${uploadedUrl}`);
+      } catch (err) {
+        console.error('Image upload failed:', err);
+      } finally {
+        setIsUploadingImage(false);
+      }
     }
   };
-  // 3. Updated toggleMic logic
-  const toggleMic = () => {
+
+  const toggleMic = async () => {
     animateMic();
-    const currentlyRecording = isRecording;
-    setIsRecording(!currentlyRecording);
 
-    if (currentlyRecording) {
-      setTimeout(() => {
-        const duration = Math.floor(Math.random() * 28) + 2; // Random duration 2-30s
-        const audioMessage: Message = {
-          id: Date.now().toString(),
-          type: 'audio',
-          content: `0:${duration.toString().padStart(2, '0')}`,
-          sender: 'user',
-        };
-        setMessages((prev) => [...prev, audioMessage]);
-        scrollToEnd();
-
-        const lastTextMessage = [...messages].reverse().find((m) => m.type === 'text');
-        const replyLang = lastTextMessage?.lang || uiLang;
-        fakeBotReply('voice message about market', replyLang);
-      }, 500);
-    }
-  };
-
-  const renderItem = ({ item }: { item: Message }) => {
-    const isUser = item.sender === 'user';
-    return (
-      <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: isUser ? 'flex-end' : 'flex-start',
-          marginVertical: 4,
-        }}
-      >
-        {!isUser && (
-          <Image
-            source={botIcon}
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: 16,
-              marginRight: 8,
-              alignSelf: 'flex-end',
-            }}
-          />
-        )}
-        <View
-          style={{
-            backgroundColor: isUser ? '#20C997' : '#E6F7F5',
-            paddingHorizontal: 12,
-            paddingVertical: 10,
-            borderRadius: 16,
-            maxWidth: '75%',
-          }}
-        >
-          {item.type === 'text' && (
-            <Text style={{ color: isUser ? '#fff' : '#004D40', fontSize: 15 }}>{item.content}</Text>
-          )}
-          {item.type === 'image' && (
-            <Image
-              source={{ uri: item.content }}
-              style={{ width: 180, height: 180, borderRadius: 12 }}
-            />
-          )}
-          {/* 4. New Audio bubble UI */}
-          {item.type === 'audio' && (
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Ionicons name="play" size={24} color="#fff" />
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  marginHorizontal: 10,
-                  height: 20,
-                }}
-              >
-                {[12, 18, 15, 10, 16, 12, 8, 15, 11].map((h, i) => (
-                  <View
-                    key={i}
-                    style={{
-                      width: 2.5,
-                      height: h,
-                      backgroundColor: '#A7F3D0',
-                      borderRadius: 2,
-                      marginRight: 2,
-                    }}
-                  />
-                ))}
-              </View>
-              <Text style={{ color: '#fff', fontSize: 14, fontWeight: '500' }}>{item.content}</Text>
-            </View>
-          )}
-        </View>
-      </View>
-    );
-  };
-
-  async function handleSuggestionPress(q, lang: Language) {
-    const query = q.query.toLowerCase();
-    const feature = detectFeature(query);
-    if (query.includes('weather') || query.includes('market')) {
-      console.log('Navigate to Crop Rotation Route');
-      //fecthing the crop rotation data from backend rest api ...............
-
-      try {
-        const res = await api.post(`/api/crop-rotation`, {
-          userId: dummyAuth.user.id,
-          query,
-          lang,
-          feature,
-        });
-
-        console.log(res.data);
-      } catch (error) {
-        console.log(error);
-      }
-    } else if (query.includes('disease')) {
-      console.log('Navigate to Disease Route');
-      //fecthing the crop dieases data from backend rest api ...............
-
-      try {
-        const res = await api.post('/api/crop-disease-detection', {
-          userId: dummyAuth.user.id,
-          query,
-          lang,
-          feature,
-        });
-
-        console.log(res.data);
-      } catch (error) {
-        console.log(error);
-      }
+    if (!isRecording) {
+      // await startRecording();
+      setIsRecording(true);
     } else {
-      console.log('Navigate to default route or show message');
-      console.log(query);
+      setIsRecording(false);
+
       try {
-        const res = await api.post('/api/chat', {
-          userId: dummyAuth.user.id,
-          query,
-          lang,
-        });
-        console.log(res.data);
-      } catch (error) {
-        console.log(error);
+        // const uri = await stopRecording();
+        // if (!uri) throw new Error("No recording URI");
+        // const uploadedUrl = await uploadAudio(uri);
+        // if (!uploadedUrl) throw new Error("No audio URL from server");
+        // console.log("✅ Audio uploaded:", uploadedUrl);
+        // setMessages((prev) => [
+        //   ...prev,
+        //   {
+        //     id: Date.now().toString(),
+        //     type: "audio",
+        //     content: uploadedUrl,
+        //     sender: "user",
+        //   },
+        // ]);
+        // scrollToEnd();
+      } catch (err) {
+        console.error('❌ Audio upload failed:', err);
       }
     }
-  }
+  };
+
+  const sendMessage = (message: string, image_uri: string | null) => {
+    if (!message.trim() && !image_uri) return;
+
+    const newMessages: Message[] = [];
+
+    if (message.trim()) {
+      newMessages.push({
+        id: Date.now().toString() + '_text',
+        type: 'text',
+        content: message,
+        sender: 'user',
+      });
+    }
+
+    if (image_uri) {
+      newMessages.push({
+        id: Date.now().toString() + '_img',
+        type: 'image',
+        content: image_uri,
+        sender: 'user',
+      });
+    }
+
+    setMessages((prev) => [...prev, ...newMessages]);
+
+    fetchReply(message, image_uri || '');
+
+    setText('');
+    setImageUri(null);
+    scrollToEnd();
+  };
 
   useEffect(() => {
     if (!user?.primaryEmailAddress?.emailAddress) {
       router.replace('/(drawer)/login');
     }
   }, [user]);
+
+  const isTextMessage = (msg: Message): msg is Extract<Message, { type: 'text' }> => {
+    return msg.type === 'text';
+  };
+  const renderItem = ({ item }: { item: Message }) => {
+    const isUser = item.sender === 'user';
+
+    return (
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: isUser ? 'flex-end' : 'flex-start',
+          marginVertical: 6,
+        }}
+      >
+        {!isUser && (
+          <Image
+            source={botIcon}
+            style={{ width: 32, height: 32, borderRadius: 16, marginRight: 8 }}
+          />
+        )}
+
+        <View
+          style={{
+            backgroundColor: isUser ? '#20C997' : '#E6F7F5',
+            padding: 12,
+            borderRadius: 16,
+            maxWidth: '75%',
+            overflow: 'hidden',
+          }}
+        >
+          {item.type === 'text' && (
+            <Text style={{ color: isUser ? '#fff' : '#004D40', fontSize: 16 }}>{item.content}</Text>
+          )}
+
+          {item.type === 'image' && (
+            <Image
+              source={{ uri: item.content }}
+              style={{
+                width: 200,
+                height: 200,
+                marginTop: isTextMessage(item) ? 8 : 0,
+                resizeMode: 'cover',
+              }}
+            />
+          )}
+
+          {item.type === 'audio' && (
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                marginTop: isTextMessage(item) ? 8 : 0,
+              }}
+            >
+              <Ionicons name="play" size={24} color="#fff" />
+              <Text style={{ color: '#fff', marginLeft: 8 }}>{item.content}</Text>
+            </View>
+          )}
+        </View>
+      </View>
+    );
+  };
 
   return (
     <KeyboardAvoidingView
@@ -496,35 +305,27 @@ export default function ChatScreen() {
         contentContainerStyle={{
           padding: 15,
           flexGrow: 1,
-          justifyContent: messages.length === 0 ? 'center' : 'flex-start',
+          justifyContent: messages.length ? 'flex-start' : 'center',
         }}
         onContentSizeChange={scrollToEnd}
         onLayout={scrollToEnd}
         ListEmptyComponent={
-          <View style={{ alignItems: 'center', justifyContent: 'center', flex: 1 }}>
+          <View style={{ alignItems: 'center' }}>
             <Ionicons name="leaf-outline" size={40} color="#20C997" />
-            <Text style={{ fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginTop: 8 }}>
-              {welcomeContent[uiLang].title}
+            <Text style={{ fontSize: 20, fontWeight: 'bold', marginTop: 8 }}>
+              {welcomeContent.title}
             </Text>
-            <Text style={{ color: '#666', textAlign: 'center', marginTop: 4, marginBottom: 16 }}>
-              {welcomeContent[uiLang].subtitle}
+            <Text style={{ color: '#666', marginTop: 4, marginBottom: 16 }}>
+              {welcomeContent.subtitle}
             </Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center' }}>
-              {welcomeContent[uiLang].questions.map((q, index) => (
+              {welcomeContent.questions.map((q, i) => (
                 <TouchableOpacity
-                  key={index}
-                  style={{
-                    backgroundColor: '#E6F7F5',
-                    paddingHorizontal: 12,
-                    paddingVertical: 8,
-                    borderRadius: 12,
-                    margin: 4,
-                  }}
-                  onPress={() => handleSuggestionPress(q)}
+                  key={i}
+                  onPress={() => sendMessage(q.query, '')}
+                  style={{ backgroundColor: '#E6F7F5', padding: 8, borderRadius: 12, margin: 4 }}
                 >
-                  <Text style={{ color: '#004D40', fontWeight: '500', fontSize: 13 }}>
-                    {q.text}
-                  </Text>
+                  <Text style={{ color: '#004D40' }}>{q.text}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -541,73 +342,78 @@ export default function ChatScreen() {
 
       <RecordingIndicator isRecording={isRecording} />
 
-      <View style={{ flexDirection: 'column' }}>
-        {/* Chat Input Bar */}
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            padding: 10,
-            borderTopWidth: 1,
-            borderColor: '#eee',
-            backgroundColor: '#fff',
-          }}
-        >
-          <TouchableOpacity onPress={pickImage} style={{ marginRight: 10 }}>
-            <Ionicons name="image-outline" size={28} color="#20C997" />
-          </TouchableOpacity>
-
-          <View
-            style={{
-              flex: 1,
-              flexDirection: 'row',
-              alignItems: 'center',
-              backgroundColor: '#f8f8f8',
-              borderRadius: 25,
-              paddingHorizontal: 10,
-            }}
-          >
+      {imageUri && (
+        <View className="mb-2">
+          <View className="relative w-28 h-28">
+            <Image source={{ uri: imageUri }} className="w-full h-full rounded-lg" />
             <TouchableOpacity
-              onPress={() => setUiLang(uiLang === 'en' ? 'hi' : 'en')}
-              style={{ padding: 8 }}
+              onPress={() => setImageUri(null)}
+              className="absolute top-4 right-0 -translate-x-1/4 -translate-y-1/4 p-1 bg-red-600 rounded-full"
             >
-              <Text style={{ color: '#00796B', fontWeight: 'bold', fontSize: 16 }}>
-                {uiLang.toUpperCase()}
-              </Text>
-            </TouchableOpacity>
-
-            <TextInput
-              value={text}
-              onChangeText={setText}
-              placeholder="Type a message..."
-              style={{ flex: 1, paddingVertical: 10, fontSize: 16, marginLeft: 5 }}
-            />
-
-            <TouchableOpacity onPress={toggleMic} style={{ marginRight: 12 }}>
-              <Animated.View
-                style={{
-                  transform: [{ scale: micScale }],
-                  padding: 4,
-                  borderRadius: 99,
-                  backgroundColor: isRecording ? '#b22222' : '#05998c',
-                }}
-              >
-                <Ionicons name={'mic'} size={20} color={'#fff'} />
-              </Animated.View>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => sendMessage(text)}
-              disabled={!text.trim()}
-              style={{
-                padding: 8,
-                borderRadius: 99,
-                backgroundColor: text.trim() ? '#14B8A6' : '#D1D5DB',
-              }}
-            >
-              <Ionicons name="send" size={20} color={text.trim() ? '#fff' : '#6b7280'} />
+              <Ionicons name="close" size={16} color="#fff" />
             </TouchableOpacity>
           </View>
+        </View>
+      )}
+      {/* Input Bar */}
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          padding: 10,
+          borderTopWidth: 1,
+          borderColor: '#eee',
+        }}
+      >
+        <TouchableOpacity onPress={pickImage} style={{ marginRight: 10 }}>
+          {isUploadingImage ? (
+            <ActivityIndicator size="small" color="#20C997" />
+          ) : (
+            <Ionicons name="image-outline" size={28} color="#20C997" />
+          )}
+        </TouchableOpacity>
+
+        <View
+          style={{
+            flex: 1,
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: '#f8f8f8',
+            borderRadius: 25,
+            paddingHorizontal: 10,
+          }}
+        >
+          <TextInput
+            value={text}
+            onChangeText={setText}
+            placeholder="Type a message..."
+            style={{ flex: 1, paddingVertical: 10, fontSize: 16 }}
+          />
+
+          <TouchableOpacity onPress={toggleMic} style={{ marginRight: 12 }}>
+            <Animated.View
+              style={{
+                transform: [{ scale: micScale }],
+                padding: 6,
+                borderRadius: 50,
+                backgroundColor: isRecording ? '#b22222' : '#05998c',
+              }}
+            >
+              <Ionicons name="mic" size={20} color="#fff" />
+            </Animated.View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => sendMessage(text, imageUri || '')}
+            disabled={!text.trim()}
+            style={{
+              padding: 8,
+              borderRadius: 50,
+              backgroundColor: text.trim() ? '#14B8A6' : '#D1D5DB',
+            }}
+          >
+            <Ionicons name="send" size={20} color={text.trim() ? '#fff' : '#6b7280'} />
+          </TouchableOpacity>
         </View>
       </View>
     </KeyboardAvoidingView>
