@@ -1,47 +1,16 @@
-function App() {
+import React from 'react';
+import Navbar from './components/NavBar/Navbar.jsx';
+import HeroSection from './components/HeroSection/HeroSection.jsx';
+import FeaturesSection from './components/FeatureSection/FeatureSection.jsx';
+import Footer from './components/Footer/Footer.jsx';
+
+export default function App() {
   return (
-    <section className="min-h-svh flex items-center justify-center bg-white">
-      <div className="max-w-2xl mx-auto text-center px-6 font-[Poppins]">
-        <h1 className="text-4xl md:text-6xl font-bold text-gray-900">Crop AI 🌱</h1>
-
-        <p className="mt-4 text-lg text-gray-600">
-          A cross-compatible <span className="font-bold">React Native app</span> for farmers —
-          powered by AI.
-        </p>
-
-        <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-4">
-          <a href="#" className="px-5 py-2 rounded-lg bg-black text-white text-sm font-medium">
-            Docs
-          </a>
-          <a
-            href="https://github.com/abhinab-choudhury/crop-ai"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-5 py-2 rounded-lg border border-gray-300 text-gray-700 text-sm font-medium"
-          >
-            GitHub
-          </a>
-        </div>
-
-        <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-          <div className="p-4 rounded-lg border border-gray-200">
-            <p className="font-medium">📱 Cross-Compatible</p>
-            <p className="mt-1 text-gray-600">Android, iOS & Web</p>
-          </div>
-
-          <div className="p-4 rounded-lg border border-gray-200">
-            <p className="font-medium">🤖 AI-Powered</p>
-            <p className="mt-1 text-gray-600">Crop disease detection</p>
-          </div>
-
-          <div className="p-4 rounded-lg border border-gray-200">
-            <p className="font-medium">🌍 Farmer-Friendly</p>
-            <p className="mt-1 text-gray-600">Offline-first support</p>
-          </div>
-        </div>
-      </div>
-    </section>
+    <>
+      <Navbar />
+      <HeroSection />
+      <FeaturesSection />
+      <Footer />
+    </>
   );
 }
-
-export default App;
