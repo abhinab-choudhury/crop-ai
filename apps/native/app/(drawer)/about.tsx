@@ -13,7 +13,7 @@ export default function Profile() {
     <ScrollView className="flex-1">
       <View className="p-6">
         {/* Header Card */}
-        <View className="rounded-2xl shadow-md mb-6">
+        <View className="rounded-2xl mb-6">
           <Text className="text-base text-gray-600 leading-6 text-start font-poppinsRegular">
             Crop AI is a revolutionary, AI-powered platform designed to empower farmers with a
             science-based approach to agriculture. Developed in collaboration with the Government of
@@ -38,7 +38,7 @@ export default function Profile() {
           <Text className="text-xl font-poppinsBold text-[#34495e] mb-4">Key Features</Text>
 
           {/* Feature Cards */}
-          <View className="rounded-xl shadow p-2 mb-3">
+          <View className="rounded-xl p-2 mb-3">
             <Text className="text-base text-gray-700 font-poppinsBold mb-1">AI-Powered Chat</Text>
             <Text className="text-base text-gray-600 font-poppinsRegular">
               Ask questions in your local language and get instant, actionable advice on any farming
@@ -46,7 +46,7 @@ export default function Profile() {
             </Text>
           </View>
 
-          <View className="rounded-xl shadow p-2 mb-3">
+          <View className="rounded-xl p-2 mb-3">
             <Text className="text-base text-gray-700 font-poppinsBold mb-1">
               Intelligent Recommendations
             </Text>
@@ -56,7 +56,7 @@ export default function Profile() {
             </Text>
           </View>
 
-          <View className="rounded-xl shadow p-2">
+          <View className="rounded-xl p-2">
             <Text className="text-base text-gray-700 font-poppinsBold mb-1">
               Personalized Profile
             </Text>

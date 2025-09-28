@@ -23,11 +23,12 @@ WebBrowser.maybeCompleteAuthSession();
 
 export default function GoogleSignIn() {
   useWarmUpBrowser();
-
+  
   // Use the `useSSO()` hook to access the `startSSOFlow()` method
   const { startSSOFlow } = useSSO();
-
+  
   const onPress = useCallback(async () => {
+    console.log("Google Button Clicked")
     try {
       // Start the authentication process by calling `startSSOFlow()`
       const { createdSessionId, setActive, signIn, signUp } = await startSSOFlow({

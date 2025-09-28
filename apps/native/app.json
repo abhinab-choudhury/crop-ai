@@ -29,14 +29,14 @@
         "NSMicrophoneUsageDescription": "This app uses the microphone to record audio."
       },
       "supportsTablet": true,
-      "bundleIdentifier": "com.amanvarshney01.mybettertapp"
+      "bundleIdentifier": "com.cropai.app"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.amanvarshney01.mybettertapp",
+      "package": "com.cropai.app",
       "edgeToEdgeEnabled": true
     }
   }

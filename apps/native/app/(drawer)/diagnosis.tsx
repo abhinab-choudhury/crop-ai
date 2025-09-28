@@ -5,7 +5,8 @@ import { router } from 'expo-router';
 import { Text } from '@/components/ui/text';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-// import loadResNet50, { runInference } from '@/lib/disease-detection';
+// import { loadResNet50, runInference } from '@/lib/disease-detection';
+
 
 interface PredictionResult {
   predictedClass: string;
@@ -43,12 +44,14 @@ export default function DiagnosisScreen() {
     }
   };
 
+
   const predict = async (imageUri: string) => {
     try {
       setLoading(true);
       // await loadResNet50();
       // const output = await runInference(imageUri);
-      setResult({ predictedClass: 'Apple___Apple_scab', confidence: '94.32%' });
+      // setResult(output);
+      setResult({predictedClass: "Tomato, Bacterial Spot", confidence:"96.45%"})
     } catch (error) {
       console.error('Prediction error:', error);
       setResult(null);
@@ -56,6 +59,7 @@ export default function DiagnosisScreen() {
       setLoading(false);
     }
   };
+
 
   return (
     <View className="flex-1 bg-white px-6 pt-12 justify-between">

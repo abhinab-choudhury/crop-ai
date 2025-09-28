@@ -1,9 +1,12 @@
-import { InferenceSession, Tensor } from 'onnxruntime-react-native';
 import { Asset } from 'expo-asset';
 import * as ImageManipulator from 'expo-image-manipulator';
-import ResNet50Model from '@/assets/resnet50_plant_disease.onnx';
+import * as ort from 'onnxruntime-react-native';
+import { Buffer } from 'buffer';
 
-const diseaseClasses = [
+const { Tensor } = ort;
+
+// List of disease classes
+export const diseaseClasses = [
   'Apple___Apple_scab',
   'Apple___Black_rot',
   'Apple___Cedar_apple_rust',
@@ -44,60 +47,60 @@ const diseaseClasses = [
   'Tomato___healthy',
 ];
 
-let session: InferenceSession | null = null;
+let session: ort.InferenceSession | null = null;
 
-export default async function loadResNet50() {
+// Load ResNet50 model
+export async function loadResNet50() {
   if (session) return session;
 
-  const modelAsset = Asset.fromModule(ResNet50Model);
+  const modelAsset = Asset.fromModule(require('@/assets/resnet50_plant_disease.onnx'));
+  console.log("modelAsset: ", modelAsset);
   await modelAsset.downloadAsync();
 
-  if (!modelAsset.localUri) {
-    throw new Error('Failed to resolve local model URI');
-  }
+  if (!modelAsset.localUri) throw new Error('Failed to resolve local model URI');
 
-  session = await InferenceSession.create(modelAsset.localUri, {
+  session = await ort.InferenceSession.create(modelAsset.localUri, {
     executionProviders: ['cpuExecutionProvider'],
   });
 
   return session;
 }
 
+// Preprocess image into Float32Array for ONNX model
 async function preprocessImage(uri: string) {
+  // Resize to 224x224
   const manipResult = await ImageManipulator.manipulateAsync(
     uri,
-    [{ resize: { width: 256, height: 256 } }],
-    { base64: true },
+    [{ resize: { width: 224, height: 224 } }],
+    { base64: true }
   );
 
-  if (!manipResult.base64) {
-    throw new Error('Failed to process image');
-  }
+  if (!manipResult.base64) throw new Error('Failed to process image');
 
-  const raw = atob(manipResult.base64);
-  const uint8 = new Uint8Array(raw.length);
-  for (let i = 0; i < raw.length; i++) {
-    uint8[i] = raw.charCodeAt(i);
-  }
+  // Decode base64
+  const raw = Buffer.from(manipResult.base64, 'base64');
 
-  const float32 = new Float32Array(3 * 256 * 256);
-  for (let i = 0; i < 256 * 256; i++) {
-    float32[i] = uint8[i * 4] / 255; // R
-    float32[i + 256 * 256] = uint8[i * 4 + 1] / 255; // G
-    float32[i + 2 * 256 * 256] = uint8[i * 4 + 2] / 255; // B
+  // Convert to Float32Array (CHW)
+  const float32 = new Float32Array(3 * 224 * 224);
+  let offset = 0;
+  for (let i = 0; i < 224 * 224; i++) {
+    float32[i] = raw[offset++] / 255; // R
+    float32[i + 224 * 224] = raw[offset++] / 255; // G
+    float32[i + 2 * 224 * 224] = raw[offset++] / 255; // B
+    offset++; 
   }
 
   return float32;
 }
 
-/** Run inference on an image */
+// Run inference on a given image URI
 export async function runInference(uri: string) {
   if (!session) await loadResNet50();
 
   const tensorData = await preprocessImage(uri);
-  const tensor = new Tensor('float32', tensorData, [1, 3, 256, 256]);
+  const tensor = new Tensor('float32', tensorData, [1, 3, 224, 224]);
 
-  const feeds: Record<string, Tensor> = {};
+  const feeds: Record<string, typeof tensor> = {};
   feeds[session!.inputNames[0]] = tensor;
 
   const results = await session!.run(feeds);
@@ -111,6 +114,6 @@ export async function runInference(uri: string) {
 
   return {
     predictedClass: diseaseClasses[maxIdx] || `Class_${maxIdx}`,
-    confidence: confidence.toFixed(3),
+    confidence: (confidence * 100).toFixed(2) + '%',
   };
 }
