@@ -1,46 +1,107 @@
-# crop-ai
+<div align="center">
+  <img src="https://crop-ai-one.vercel.app/icon.png" alt="Crop AI Logo" width="100"/>
+  <h1>Crop AI</h1>
+  <p>AI-powered crop diagnosis, guidance, and multilingual support for farmers</p>
+</div>
+
+---
 
 ## Getting Started
 
-First, install the dependencies:
+### 1. Install Dependencies
+
+Install all project dependencies:
 
 ```bash
 pnpm install
+````
+
+If you face issues with Expo Go:
+
+```bash
+cd apps/native
+pnpm install
 ```
 
-## Database Setup
+Set up the ML server:
 
-This project uses MongoDB with Mongoose.
+```bash
+cd apps/ml-server
+uv venv
+uv sync
+```
 
-1. Make sure you have MongoDB set up.
-2. Update your `apps/server/.env` file with your MongoDB connection URI.
+Optional setups:
 
-Then, run the development server:
+```bash
+cd apps/server
+pnpm install
+
+cd apps/web
+pnpm install
+```
+
+---
+
+### 2. Database Setup
+
+This project uses **MongoDB** with **Mongoose**.
+
+1. Ensure MongoDB is installed and running.
+2. Update `apps/server/.env` with your MongoDB connection URI.
+
+---
+
+### 3. Running the Project
+
+Start the development servers:
 
 ```bash
 pnpm dev
 ```
 
-Use the Expo Go app to run the mobile application.
-The API is running at [http://localhost:3000](http://localhost:3000).
+* The mobile app can be run via **Expo Go**.
+* Backend API is available at: [http://localhost:3000](http://localhost:3000).
+
+---
 
 ## Project Structure
 
 ```
 crop-ai/
 ├── apps/
-│   ├── native/      # Mobile application (React Native, Expo)
-│   ├── ml-server/   # ML Server API (Fast API)
+│   ├── native/      # Mobile app (React Native + Expo)
+│   ├── ml-server/   # Machine Learning server (FastAPI)
 │   ├── server/      # Backend API (Express)
-│   └── web/         # React Web App (Vite)
+│   └── web/         # Web app (React + Vite)
 ```
+
+---
 
 ## Available Scripts
 
-- `pnpm dev`: Start all applications in development mode
-- `pnpm build`: Build all applications
-- `pnpm dev:native`: Start the React Native/Expo development server
-- `pnpm dev:web`: Start only the web application
-- `pnpm dev:ml-server`: Start only the ML Fast API server
-- `pnpm dev:server`: Start only the server
-- `pnpm check-types`: Check TypeScript types across all apps
+| Script               | Description                                    |
+| -------------------- | ---------------------------------------------- |
+| `pnpm dev`           | Start all applications in development mode     |
+| `pnpm build`         | Build all applications                         |
+| `pnpm dev:native`    | Start the React Native/Expo development server |
+| `pnpm dev:web`       | Start only the web application                 |
+| `pnpm dev:ml-server` | Start only the ML FastAPI server               |
+| `pnpm dev:server`    | Start only the backend server                  |
+| `pnpm check-types`   | Check TypeScript types across all apps         |
+
+---
+
+## Features
+
+* AI-powered **disease detection** from leaf images
+* Crop Recommendation (XGBoost)
+* **Crop Yield** Prediction (XGBoost)
+* **RealTime Mandi Market** Analysis
+* **Speech to Text and vice-versa** supported
+* **Multilingual chat assistant** for farmers
+* **Crop and rotation guidance** tailored to local regions
+* Works **offline** and on mobile devices
+* Easy-to-use **mobile applications**
+
+ 
