@@ -113,7 +113,7 @@ export default function HeroSection() {
           </motion.p>
 
           <motion.div className="hero-ctas" variants={fadeUp}>
-            <a target="_blank" href="http://github.com/abhinab-choudhury/crop-ai" className="btn btn-primary">
+            <a target="_blank" href="https://www.youtube.com/watch?v=zUs26gJMBTo" className="btn btn-primary">
               <FaYoutube size={20} />
               Youtube Demo
             </a>
