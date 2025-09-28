@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import './HeroSection.css';
+// eslint-disable-next-line no-unused-vars
 import { motion } from 'framer-motion';
 import ChatScreen from '../../assets/phone.jpg';
+import { FaGithub, FaYoutube } from 'react-icons/fa';
 
 export default function HeroSection() {
   const container = useMemo(
@@ -111,12 +113,12 @@ export default function HeroSection() {
           </motion.p>
 
           <motion.div className="hero-ctas" variants={fadeUp}>
-            <a href="" className="btn btn-primary">
-              <span className="btn-icon"></span>
-              Download Now
+            <a target="_blank" href="http://github.com/abhinab-choudhury/crop-ai" className="btn btn-primary">
+              <FaYoutube size={20} />
+              Youtube Demo
             </a>
             <a href="https://github.com/abhinab-choudhury/crop-ai" className="btn btn-outline">
-              <span className="btn-icon"></span>
+              <FaGithub />
               Github
             </a>
           </motion.div>

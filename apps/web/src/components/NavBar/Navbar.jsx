@@ -19,12 +19,12 @@ export default function Navbar() {
       <div className="nav-inner">
         <div className="logo">
           <img className="logo-icon" src="icon.png" alt="crop-ai-logo" />
-          <span className="logo-text">CropAI</span>
+          <span className="logo-text">Crop AI</span>
         </div>
 
-        <ul className={`nav-links ${isMobileMenuOpen ? 'nav-links-mobile' : ''}`}>
+        <ul className="nav-links">
           <li className="nav-cta-mobile">
-            <a href="#download" className="btn-nav">
+            <a target="_blank" href="http://github.com/abhinab-choudhury/crop-ai" className="btn-nav">
               <span className="btn-icon"></span>
               Download Now
             </a>
@@ -32,14 +32,13 @@ export default function Navbar() {
         </ul>
 
         <div className="nav-actions">
-          <a href="#download" className="btn-nav btn-nav-desktop">
+          <a target="_blank" href="http://github.com/abhinab-choudhury/crop-ai" className="btn-nav btn-nav-desktop">
             <span className="btn-icon"></span>
             Download
           </a>
 
           <button
-            className={`mobile-menu-toggle ${isMobileMenuOpen ? 'active' : ''}`}
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="mobile-menu-toggle"
             aria-label="Toggle mobile menu"
           >
             <span></span>
