@@ -9,6 +9,8 @@ const env = {
   CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
   CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
   ML_SERVER: process.env.ML_SERVER,
+  TAVILY_API_KEY: process.env.TAVILY_API_KEY,
+  WEATHER_KEY: process.env.WEATHER_KEY,
 };
 
 export default env;

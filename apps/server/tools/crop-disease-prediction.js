@@ -1,6 +1,6 @@
-import env from './env.js';
+import env from './../utils/env.js';
 
-export default async function crop_disease_prediction(file_url) {
+export default async function cropDiseasePrediction(file_url) {
   try {
     const response = await fetch(`${env.ML_SERVER}/predict/resnet50`, {
       method: 'POST',

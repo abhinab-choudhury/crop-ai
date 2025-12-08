@@ -7,7 +7,6 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 // import { loadResNet50, runInference } from '@/lib/disease-detection';
 
-
 interface PredictionResult {
   predictedClass: string;
   confidence: string;
@@ -17,14 +16,14 @@ export default function DiagnosisScreen() {
   const [selectedImage, setSelectedImage] = React.useState<string | null>(null);
   const [result, setResult] = React.useState<PredictionResult | null>(null);
   const [loading, setLoading] = React.useState(false);
-  const { user } = useUser();
+  // const { user } = useUser();
 
   // Redirect if not logged in
-  React.useEffect(() => {
-    if (!user?.primaryEmailAddress?.emailAddress) {
-      router.replace('/(drawer)/login');
-    }
-  }, [user]);
+  // React.useEffect(() => {
+  //   if (!user?.primaryEmailAddress?.emailAddress) {
+  //     router.replace('/(drawer)/login');
+  //   }
+  // }, [user]);
 
   const pickImage = async () => {
     const res = await ImagePicker.launchImageLibraryAsync({ base64: true, quality: 1 });
@@ -44,14 +43,13 @@ export default function DiagnosisScreen() {
     }
   };
 
-
   const predict = async (imageUri: string) => {
     try {
       setLoading(true);
       // await loadResNet50();
       // const output = await runInference(imageUri);
       // setResult(output);
-      setResult({predictedClass: "Tomato, Bacterial Spot", confidence:"96.45%"})
+      setResult({ predictedClass: 'Tomato, Bacterial Spot', confidence: '96.45%' });
     } catch (error) {
       console.error('Prediction error:', error);
       setResult(null);
@@ -59,7 +57,6 @@ export default function DiagnosisScreen() {
       setLoading(false);
     }
   };
-
 
   return (
     <View className="flex-1 bg-white px-6 pt-12 justify-between">

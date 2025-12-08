@@ -17,7 +17,7 @@ import { useUser } from '@clerk/clerk-expo';
 import { router } from 'expo-router';
 import api from '@/lib/axiosInstance';
 import botIcon from '@/assets/bot.png';
-import { useAudioRecorder } from '@/hooks/useAudioRecorder';
+import RecordingIndicator from '@/components/chat/RecordingIndicator';
 
 type Message = {
   id: string;
@@ -36,40 +36,6 @@ const welcomeContent = {
   ],
 };
 
-const RecordingIndicator = ({ isRecording }: { isRecording: boolean }) => {
-  const opacityAnim = useRef(new Animated.Value(1)).current;
-
-  useEffect(() => {
-    if (isRecording) {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(opacityAnim, { toValue: 0.2, duration: 700, useNativeDriver: true }),
-          Animated.timing(opacityAnim, { toValue: 1, duration: 700, useNativeDriver: true }),
-        ]),
-      ).start();
-    } else {
-      opacityAnim.stopAnimation();
-      opacityAnim.setValue(1);
-    }
-  }, [isRecording]);
-
-  if (!isRecording) return null;
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 15, marginBottom: 5 }}>
-      <Animated.View
-        style={{
-          width: 10,
-          height: 10,
-          borderRadius: 5,
-          backgroundColor: 'red',
-          opacity: opacityAnim,
-        }}
-      />
-      <Text style={{ marginLeft: 8, color: '#e53e3e' }}>Recording...</Text>
-    </View>
-  );
-};
-
 export default function ChatScreen() {
   const { user } = useUser();
   const flatListRef = useRef<FlatList>(null);
@@ -80,7 +46,6 @@ export default function ChatScreen() {
   const [isRecording, setIsRecording] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [imageUri, setImageUri] = useState<string | null>(null);
-  const { startRecording, stopRecording, uploadAudio } = useAudioRecorder();
 
   const micScale = useRef(new Animated.Value(1)).current;
 
@@ -96,28 +61,33 @@ export default function ChatScreen() {
   const fetchReply = useCallback(
     async (query: string, image_uri: string) => {
       setIsTyping(true);
+
       try {
-        const res = await api.post('/api/chat', { userId: user?.id, message: query, image_uri });
-        const data = res.data.data;
+        const res = await api.post('/api/chat', {
+          userId: user?.id,
+          message: query,
+          image_uri,
+        });
+
+        const finalResponse = res?.data?.data?.finalResponse;
 
         setMessages((prev) => [
           ...prev,
           {
             id: Date.now().toString(),
             type: 'text',
-            content: data?.finalResponse || '⚠️ No response',
-            image_uri,
+            content: finalResponse ?? '⚠️ AI did not return a response',
             sender: 'bot',
           },
         ]);
       } catch (err) {
-        console.error(err);
+        console.log('chat error:', err);
         setMessages((prev) => [
           ...prev,
           {
             id: Date.now().toString(),
             type: 'text',
-            content: 'Couldn’t connect to server.',
+            content: '❌ Error contacting AI server',
             sender: 'bot',
           },
         ]);
@@ -163,27 +133,11 @@ export default function ChatScreen() {
     animateMic();
 
     if (!isRecording) {
-      // await startRecording();
       setIsRecording(true);
     } else {
       setIsRecording(false);
 
       try {
-        // const uri = await stopRecording();
-        // if (!uri) throw new Error("No recording URI");
-        // const uploadedUrl = await uploadAudio(uri);
-        // if (!uploadedUrl) throw new Error("No audio URL from server");
-        // console.log("✅ Audio uploaded:", uploadedUrl);
-        // setMessages((prev) => [
-        //   ...prev,
-        //   {
-        //     id: Date.now().toString(),
-        //     type: "audio",
-        //     content: uploadedUrl,
-        //     sender: "user",
-        //   },
-        // ]);
-        // scrollToEnd();
       } catch (err) {
         console.error('❌ Audio upload failed:', err);
       }
@@ -222,15 +176,6 @@ export default function ChatScreen() {
     scrollToEnd();
   };
 
-  useEffect(() => {
-    if (!user?.primaryEmailAddress?.emailAddress) {
-      router.replace('/(drawer)/login');
-    }
-  }, [user]);
-
-  const isTextMessage = (msg: Message): msg is Extract<Message, { type: 'text' }> => {
-    return msg.type === 'text';
-  };
   const renderItem = ({ item }: { item: Message }) => {
     const isUser = item.sender === 'user';
 
@@ -268,7 +213,6 @@ export default function ChatScreen() {
               style={{
                 width: 200,
                 height: 200,
-                marginTop: isTextMessage(item) ? 8 : 0,
                 resizeMode: 'cover',
               }}
             />
@@ -279,7 +223,6 @@ export default function ChatScreen() {
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
-                marginTop: isTextMessage(item) ? 8 : 0,
               }}
             >
               <Ionicons name="play" size={24} color="#fff" />
@@ -290,6 +233,12 @@ export default function ChatScreen() {
       </View>
     );
   };
+
+  useEffect(() => {
+    if (!user?.primaryEmailAddress?.emailAddress) {
+      router.replace('/(drawer)/login');
+    }
+  }, [user]);
 
   return (
     <KeyboardAvoidingView
@@ -355,64 +304,77 @@ export default function ChatScreen() {
           </View>
         </View>
       )}
+
       {/* Input Bar */}
       <View
         style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          padding: 10,
-          borderTopWidth: 1,
-          borderColor: '#eee',
+          padding: 12,
+          borderColor: '#ececec',
+          backgroundColor: '#ffffff',
         }}
       >
-        <TouchableOpacity onPress={pickImage} style={{ marginRight: 10 }}>
-          {isUploadingImage ? (
-            <ActivityIndicator size="small" color="#20C997" />
-          ) : (
-            <Ionicons name="image-outline" size={28} color="#20C997" />
-          )}
-        </TouchableOpacity>
-
         <View
           style={{
-            flex: 1,
             flexDirection: 'row',
             alignItems: 'center',
-            backgroundColor: '#f8f8f8',
-            borderRadius: 25,
-            paddingHorizontal: 10,
+            backgroundColor: '#f1f3f5',
+            paddingHorizontal: 14,
+            paddingVertical: 10,
+            borderRadius: 30,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 1 },
+            shadowRadius: 3,
           }}
         >
+          {/* Image Upload Button */}
+          <TouchableOpacity onPress={pickImage} style={{ marginRight: 10, padding: 6 }}>
+            {isUploadingImage ? (
+              <ActivityIndicator size="small" color="#20C997" />
+            ) : (
+              <Ionicons name="image" size={24} color="#20C997" />
+            )}
+          </TouchableOpacity>
+
+          {/* Text Input */}
           <TextInput
             value={text}
             onChangeText={setText}
-            placeholder="Type a message..."
-            style={{ flex: 1, paddingVertical: 10, fontSize: 16 }}
+            placeholder="Message Crop AI…"
+            placeholderTextColor="#9ca3af"
+            style={{
+              flex: 1,
+              fontSize: 16,
+              paddingVertical: 6,
+              paddingHorizontal: 4,
+              color: '#333',
+            }}
           />
 
-          <TouchableOpacity onPress={toggleMic} style={{ marginRight: 12 }}>
+          {/* Mic Button */}
+          <TouchableOpacity onPress={toggleMic} style={{ marginRight: 10 }}>
             <Animated.View
               style={{
                 transform: [{ scale: micScale }],
-                padding: 6,
+                padding: 8,
                 borderRadius: 50,
-                backgroundColor: isRecording ? '#b22222' : '#05998c',
+                backgroundColor: isRecording ? '#dc2626' : '#20C997',
               }}
             >
               <Ionicons name="mic" size={20} color="#fff" />
             </Animated.View>
           </TouchableOpacity>
 
+          {/* Send Button */}
           <TouchableOpacity
             onPress={() => sendMessage(text, imageUri || '')}
             disabled={!text.trim()}
             style={{
-              padding: 8,
+              padding: 10,
               borderRadius: 50,
-              backgroundColor: text.trim() ? '#14B8A6' : '#D1D5DB',
+              backgroundColor: text.trim() ? '#16a34a' : '#d1d5db',
             }}
           >
-            <Ionicons name="send" size={20} color={text.trim() ? '#fff' : '#6b7280'} />
+            <Ionicons name="send" size={18} color={text.trim() ? '#fff' : '#6b7280'} />
           </TouchableOpacity>
         </View>
       </View>

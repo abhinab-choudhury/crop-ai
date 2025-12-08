@@ -1,13 +1,13 @@
-import { useUser } from '@clerk/clerk-expo';
-import { Redirect } from 'expo-router';
+// import { useUser } from '@clerk/clerk-expo';
+// import { Redirect } from 'expo-router';
 import React from 'react';
 import { View, Text, ScrollView } from 'react-native';
 
 export default function Profile() {
-  const { user } = useUser();
-  if (!user?.primaryEmailAddress?.emailAddress) {
-    return <Redirect href="/(drawer)/login" />;
-  }
+  // const { user } = useUser();
+  // if (!user?.primaryEmailAddress?.emailAddress) {
+  //   return <Redirect href="/(drawer)/login" />;
+  // }
 
   return (
     <ScrollView className="flex-1">
@@ -70,9 +70,6 @@ export default function Profile() {
         <View className="p-6 items-center">
           <Text className="text-black text-sm mb-1 text-center">
             Crop AI - Powered by AI for Farmers
-          </Text>
-          <Text className="text-black text-sm text-center">
-            In collaboration with Government of Jharkhand
           </Text>
         </View>
       </View>

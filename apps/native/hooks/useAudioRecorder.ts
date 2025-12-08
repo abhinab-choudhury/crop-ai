@@ -1,63 +1,85 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Audio } from 'expo-av';
 import api from '@/lib/axiosInstance';
 
 export function useAudioRecorder() {
-  const [recording, setRecording] = useState<Audio.Recording | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
 
-  async function startRecording() {
+  const recordingRef = useRef<Audio.Recording | null>(null);
+
+  const startRecording = async () => {
     try {
+      console.log('Requesting permissions...');
       await Audio.requestPermissionsAsync();
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-      });
 
-      const { recording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY,
-      );
-      setRecording(recording);
+      console.log('Starting recording...');
+      const recording = new Audio.Recording();
+
+      await recording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+
+      await recording.startAsync();
+
+      recordingRef.current = recording;
+      setIsRecording(true);
     } catch (err) {
-      console.error('🎙️ Failed to start recording', err);
+      console.error('Failed to start recording:', err);
     }
-  }
+  };
 
-  async function stopRecording() {
+  const stopRecording = async () => {
+    console.log('Stopping recording...');
+    const recording = recordingRef.current;
     if (!recording) return null;
 
     try {
       await recording.stopAndUnloadAsync();
       const uri = recording.getURI();
-      setRecording(null);
+      console.log('Recording saved at:', uri);
 
-      if (!uri) return null;
+      setIsRecording(false);
       return uri;
     } catch (err) {
-      console.error('❌ Error stopping recording:', err);
+      console.error('Stop recording error:', err);
       return null;
     }
-  }
+  };
 
-  async function uploadAudio(uri: string): Promise<string> {
-    const formData = new FormData();
-    formData.append('file', {
+  const uploadAudio = async (uri: string) => {
+    const file = {
       uri,
       type: 'audio/m4a',
-      name: 'recording.m4a',
-    } as any);
+      name: 'audio.m4a',
+    };
+
+    const formData = new FormData();
+    formData.append('file', file as any);
 
     try {
-      const res = await api.post('/upload', formData, {
+      const response = await api.post('/upload/audio', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      if (!res.data.success) throw new Error('Upload failed');
-      return res.data.url;
-    } catch (err) {
-      console.error('❌ Upload error', err);
-      throw err;
-    }
-  }
+      const uploadedUrl = response.data?.data?.file_path;
 
-  return { startRecording, stopRecording, uploadAudio, recording };
+      if (uploadedUrl) {
+        const fullUrl = `${process.env.EXPO_PUBLIC_SERVER_URL}/${uploadedUrl}`;
+        setAudioUrl(fullUrl);
+        return fullUrl;
+      }
+    } catch (err) {
+      console.error('Audio upload failed:', err);
+    }
+
+    return null;
+  };
+
+  return {
+    isRecording,
+    startRecording,
+    stopRecording,
+    uploadAudio,
+    audioUrl,
+    setAudioUrl,
+  };
 }

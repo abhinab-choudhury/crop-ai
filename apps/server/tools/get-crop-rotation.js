@@ -1,15 +1,14 @@
-export default async function get_crop_rotation({
-  nitrogen,
-  phosphorous,
-  pottasium,
-  ph,
-  state,
-  city,
-}) {
+export default async function getCropRotation({ N, P, K, pH, state, city }) {
+  console.log('Crop Rotation');
+
   const country = 'India';
   const locationData = await getLocation(country, state, city);
-  if (!locationData.latitude || !locationData.longitude) {
-    return { success: false, message: 'Could not find coordinates for the specified location.' };
+
+  if (!locationData?.latitude || !locationData?.longitude) {
+    return {
+      success: false,
+      message: 'Could not find coordinates for the specified location.',
+    };
   }
 
   const [climateData, soilApiData] = await Promise.all([
@@ -17,50 +16,49 @@ export default async function get_crop_rotation({
     getSoilData(locationData.latitude, locationData.longitude),
   ]);
 
-  const result = {
-    message: `
-      You are a world-class agronomist and soil scientist AI. Your task is to create an optimal, sustainable, and profitable 12-month crop rotation schedule based on the provided data..
-      **Data Profile:**
-      - **Farm Location:** ${city}, ${state}, ${country}
-      - **Farmer's Soil Measurement:** Nitrogen (N): ${N} mg/kg, Phosphorus (P): ${phosphorous} mg/kg, Potassium (K): ${pottasium} mg/kg, Soil pH: ${ph}
-      - **ISRIC World Soil Profile:** Predicted pH: ${soilApiData.ph || 'N/A'}, Predicted Clay Content: ${soilApiData.clayContent || 'N/A'} g/kg, Predicted Soil Organic Carbon: ${soilApiData.organicCarbon || 'N/A'} dg/kg
-      - **Annual Climate Averages (Based on Last 12 Months):** Avg Temperature: ${climateData.avgTemperature?.toFixed(2) || 'N/A'} °C, Avg Humidity: ${climateData.avgHumidity?.toFixed(2) || 'N/A'} %, Total Annual Precipitation: ${climateData.totalPrecipitation?.toFixed(2) || 'N/A'} mm
+  const safeClimate = climateData || {};
+  const safeSoil = soilApiData || {};
 
-      **Your Task:**
-      Based on ALL the data above, generate a detailed 12-month crop rotation plan.
+  const message = `
+You are a world-class agronomist and soil scientist AI. Your task is to create an optimal, sustainable, and profitable 12-month crop rotation schedule based on the provided data.
 
-      **Output Format Instructions:**
-      You MUST return the response as a single, valid JSON object. Do not include any text, explanations, or markdown formatting (like \`\`\`json) before or after the JSON object.
+DATA PROFILE:
+- Farm Location: ${city}, ${state}, ${country}
+- Farmer Soil Measurement: N=${N}, P=${P}, K=${K}, pH=${pH}
+- ISRIC Soil Profile: pH=${safeSoil.ph ?? 'N/A'}, Clay=${safeSoil.clayContent ?? 'N/A'}, OrganicCarbon=${safeSoil.organicCarbon ?? 'N/A'}
+- Climate (12-month avg): Temp=${safeClimate.avgTemperature?.toFixed(2) ?? 'N/A'}°C, Humidity=${safeClimate.avgHumidity?.toFixed(2) ?? 'N/A'}%, Rainfall=${safeClimate.totalPrecipitation?.toFixed(2) ?? 'N/A'}mm
 
-      The JSON object must follow this exact structure 
+INSTRUCTIONS:
+Return ONLY a valid JSON object — no explanations, no markdown, no extra formatting.
 
-      {
-        "rotationPlan": [
-          {
-            "season": "string (e.g., 'Kharif (Monsoon)')",
-            "months": "string (e.g., 'June - October')",
-            "crop": {
-              "name": "string (Name of the recommended crop)",
-              "variety": "string (A suitable variety, if applicable)"
-            },
-            "justification": "string (A concise explanation for why this crop is recommended for this season, considering soil health, climate, and economics.)",
-            "keyActivities": [
-              "string (A list of 3-4 key farming activities for this crop during the season)"
-            ]
-          }
-        ],
-        "overallSummary": "string (A brief, encouraging summary of the plan's benefits.)"
-      }
+The JSON must follow EXACTLY this structure:
 
-      **Important:**
-      - The "rotationPlan" array should contain 2 to 3 crop suggestions, covering the main seasons for the region.
-      - Ensure all string values are properly escaped within the JSON.
-      - The entire output must be only the JSON object, starting with { and ending with }.
-    `,
-    data: { climateData, soilApiData },
+{
+  "rotationPlan": [
+    {
+      "season": "string",
+      "months": "string",
+      "crop": {
+        "name": "string",
+        "variety": "string"
+      },
+      "justification": "string",
+      "keyActivities": ["string", "string"]
+    }
+  ],
+  "overallSummary": "string"
+}
+
+Ensure JSON is clean, escaped, and valid.
+  `.trim();
+
+  return {
+    message,
+    data: {
+      climateData: safeClimate,
+      soilApiData: safeSoil,
+    },
   };
-
-  return result;
 }
 
 const getLocation = async (country, state, city) => {

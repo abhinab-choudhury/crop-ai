@@ -50,6 +50,12 @@ This project uses **MongoDB** with **Mongoose**.
 1. Ensure MongoDB is installed and running.
 2. Update `apps/server/.env` with your MongoDB connection URI.
 
+Get API Keys from 
+- [WEATHER API](https://www.weatherapi.com/) 
+- [TAVILY](https://app.tavily.com/)
+- [CLOUDINARY](https://cloudinary.com/)
+- [CLERK](https://clerk.com/)
+
 ---
 
 ### 3. Running the Project

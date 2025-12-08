@@ -1,4 +1,6 @@
-export default async function crop_prediction({
+import env from './../utils/env.js';
+
+export default async function cropPrediction({
   nitrogen,
   phosphorous,
   pottasium,
@@ -7,8 +9,10 @@ export default async function crop_prediction({
   lat,
   lon,
 }) {
+  console.log('Crop Recommend');
+
   try {
-    const response = await fetch(`${process.env.ML_SERVER}/crop-recommend`, {
+    const response = await fetch(`${env.ML_SERVER}/crop-recommend`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
