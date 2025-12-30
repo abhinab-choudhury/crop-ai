@@ -48,11 +48,11 @@ else:
     print(f"⚠️ Warning: XGBoost model file not found at {CROP_MODEL_PATH}")
 
 
-def recommend_crop(humidity:float, temperature: float, nitrogen: int, phosphorous: int, pottasium: int, ph: float, rainfall: float, lat: float, lon: float):
+def recommend_crop(humidity:float, temperature: float, nitrogen: int, phosphorus: int, potassium: int, ph: float, rainfall: float, lat: float, lon: float):
     if crop_recommendation_model is None:
         raise RuntimeError("Crop recommendation model is not available.")
     try:
-        data = np.array([[nitrogen, phosphorous, pottasium, temperature, humidity, ph, rainfall]])
+        data = np.array([[nitrogen, phosphorus, potassium, temperature, humidity, ph, rainfall]])
         prediction = crop_recommendation_model.predict(data)[0]
     except Exception as e:
         raise ValueError(f"Failed to make a crop prediction: {e}") from e
@@ -60,7 +60,7 @@ def recommend_crop(humidity:float, temperature: float, nitrogen: int, phosphorou
     return {
         "prediction": str(crop_mapping[int(prediction)]),
         "inputs": {
-            "nitrogen": nitrogen, "phosphorous": phosphorous, "pottasium": pottasium,
+            "nitrogen": nitrogen, "phosphorus": phosphorus, "potassium": potassium,
             "temperature": temperature, "humidity": humidity, "ph": ph, "rainfall": rainfall,
         },
         "location": {"lat": lat, "lon": lon}

@@ -1,9 +1,9 @@
-import env from './../utils/env.js';
+import { ML_SERVER_API } from '../utils/axios.js';
 
 export default async function cropPrediction({
   nitrogen,
-  phosphorous,
-  pottasium,
+  phosphorus,
+  potassium,
   ph,
   rainfall,
   lat,
@@ -12,27 +12,21 @@ export default async function cropPrediction({
   console.log('Crop Recommend');
 
   try {
-    const response = await fetch(`${env.ML_SERVER}/crop-recommend`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        nitrogen,
-        phosphorous,
-        pottasium,
-        ph,
-        rainfall,
-        lat,
-        lon,
-      }),
+    const response = await ML_SERVER_API.post(`/crop-recommend`, {
+      nitrogen,
+      phosphorus,
+      potassium,
+      ph,
+      rainfall,
+      lat,
+      lon,
     });
 
-    if (!response.ok) {
+    if (!response) {
       throw new Error(`ML server error: ${response.statusText}`);
     }
 
-    const result = await response.json();
+    const result = response.data;
 
     return {
       success: true,
@@ -41,14 +35,17 @@ export default async function cropPrediction({
       },
       inputs: {
         nitrogen: result.inputs.nitrogen,
-        phosphorous: result.inputs.phosphorous,
-        pottasium: result.inputs.pottasium,
+        phosphorus: result.inputs.phosphorus,
+        potassium: result.inputs.potassium,
         temperature: result.inputs.temperature,
         humidity: result.inputs.humidity,
         ph: result.inputs.ph,
         rainfall: result.inputs.rainfall,
       },
-      location: { lat: result.location.lat, lon: result.location.lon },
+      location: {
+        lat: result.location.lat,
+        lon: result.location.lon,
+      },
       message: `Based on your soil and climate data, the recommended crop is **${result.prediction}**`,
     };
   } catch (error) {

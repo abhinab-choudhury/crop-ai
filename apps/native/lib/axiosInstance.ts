@@ -4,4 +4,8 @@ const api = axios.create({
   baseURL: process.env.EXPO_PUBLIC_SERVER_URL,
 });
 
-export default api;
+const mlApi = axios.create({
+  baseURL: process.env.EXPO_PUBLIC_ML_SERVER_URL,
+});
+
+export { api, mlApi };

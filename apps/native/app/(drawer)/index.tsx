@@ -15,7 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useUser } from '@clerk/clerk-expo';
 import { router } from 'expo-router';
-import api from '@/lib/axiosInstance';
+import { api } from '@/lib/axiosInstance';
 import botIcon from '@/assets/bot.png';
 import RecordingIndicator from '@/components/chat/RecordingIndicator';
 

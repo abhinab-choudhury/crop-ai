@@ -15,7 +15,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://10.75.67.233:8081","http://10.75.67.233:3000", "http://localhost:8081", "http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -24,8 +24,8 @@ app.add_middleware(
 
 class CropRecommendationInput(BaseModel):
     nitrogen: int
-    phosphorous: int
-    pottasium: int
+    phosphorus: int
+    potassium: int
     ph: float
     rainfall: float
     lat: float
@@ -80,8 +80,8 @@ def recommend_crop(data: CropRecommendationInput):
     try:
         return predict_crop(
             data.nitrogen,
-            data.phosphorous,
-            data.pottasium,
+            data.phosphorus,
+            data.potassium,
             data.ph,
             data.rainfall,
             data.lat,

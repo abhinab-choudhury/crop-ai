@@ -1,12 +1,11 @@
 import env from './../utils/env.js';
-import axios from 'axios';
+import { WEATHER_API } from '../utils/axios.js';
 
 export default async function weatherLookup({ city }) {
   console.log('Weather Lookup Tool');
 
   const key = env.WEATHER_KEY;
-  const url = `https://api.weatherapi.com/v1/current.json?key=${key}&q=${city}&aqi=no`;
-  const { data } = await axios.get(url);
+  const { data } = await WEATHER_API.get(`/v1/current.json?key=${key}&q=${city}&aqi=no`);
 
   return {
     location: {

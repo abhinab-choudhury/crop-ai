@@ -1,12 +1,12 @@
 import env from './../utils/env.js';
-import axios from 'axios';
+import { TAVILY_API } from '../utils/axios.js';
 
 export default async function tavilySearch({ query }) {
   console.log('Tavily Search');
 
   try {
-    const response = await axios.post(
-      'https://api.tavily.com/search',
+    const response = await TAVILY_API.post(
+      '/search',
       {
         api_key: env.TAVILY_API_KEY,
         query,

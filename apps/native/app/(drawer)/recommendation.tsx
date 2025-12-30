@@ -10,7 +10,7 @@ import {
 import { Text } from '@/components/ui/text';
 import { Input } from '@/components/ui/input';
 import { useUser } from '@clerk/clerk-expo';
-import { router } from 'expo-router';
+// import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function CropRecommendationForm() {
@@ -27,9 +27,9 @@ export default function CropRecommendationForm() {
   const [result, setResult] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(false);
 
-  if (!user?.primaryEmailAddress?.emailAddress) {
-    router.replace('/(drawer)/login');
-  }
+  // if (!user?.primaryEmailAddress?.emailAddress) {
+  //   router.replace('/(drawer)/login');
+  // }
 
   const handleChange = (key: string, value: string) => {
     setForm({ ...form, [key]: value });

@@ -17,7 +17,7 @@ async function runOllamaTools(messages) {
     messages.push(response.message);
 
     const calls = response.message.tool_calls;
-    if (!calls || calls.length === 0) break; // no tools → final answer
+    if (!calls || calls.length === 0) break;
 
     for (const call of calls) {
       const fn = toolFunctions[call.function.name];

@@ -1,3 +1,5 @@
+import { GEOLOCATION_API, HISTORIAL_CLIMATE_DATA_API, ISRIC_ORG_API } from '../utils/axios.js';
+
 export default async function getCropRotation({ N, P, K, pH, state, city }) {
   console.log('Crop Rotation');
 
@@ -29,27 +31,7 @@ DATA PROFILE:
 - Climate (12-month avg): Temp=${safeClimate.avgTemperature?.toFixed(2) ?? 'N/A'}°C, Humidity=${safeClimate.avgHumidity?.toFixed(2) ?? 'N/A'}%, Rainfall=${safeClimate.totalPrecipitation?.toFixed(2) ?? 'N/A'}mm
 
 INSTRUCTIONS:
-Return ONLY a valid JSON object — no explanations, no markdown, no extra formatting.
-
-The JSON must follow EXACTLY this structure:
-
-{
-  "rotationPlan": [
-    {
-      "season": "string",
-      "months": "string",
-      "crop": {
-        "name": "string",
-        "variety": "string"
-      },
-      "justification": "string",
-      "keyActivities": ["string", "string"]
-    }
-  ],
-  "overallSummary": "string"
-}
-
-Ensure JSON is clean, escaped, and valid.
+Return the response in human readable fomrat with proper spacing and bullet points making it easier for the user to understand
   `.trim();
 
   return {
@@ -63,33 +45,46 @@ Ensure JSON is clean, escaped, and valid.
 
 const getLocation = async (country, state, city) => {
   try {
-    const response = await fetch(
-      `https://geocoding-api.open-meteo.com/v1/search?name=${city}&count=10&language=en&format=json`,
+    const response = await GEOLOCATION_API.get(
+      `/v1/search?name=${encodeURIComponent(city)}&count=10&language=en&format=json`,
     );
-    const result = await response.json();
-    // console.log(result);
 
-    const match = result.results.find(
+    const result = response.data;
+
+    console.log('GEO LOCATION API RESPONSE =', result);
+
+    if (!result.results || result.results.length === 0) {
+      console.log('No results from API.');
+      return {};
+    }
+
+    let match = result.results.find(
       (place) =>
         place.country?.toLowerCase() === country.toLowerCase() &&
         place.admin1?.toLowerCase() === state.toLowerCase() &&
         place.name?.toLowerCase() === city.toLowerCase(),
     );
 
-    console.log(match);
+    if (!match) {
+      match = result.results.find(
+        (place) =>
+          place.country?.toLowerCase() === country.toLowerCase() &&
+          place.admin1?.toLowerCase() === state.toLowerCase(),
+      );
+    }
 
     if (!match) {
-      console.log('Could not find a precise location match.');
-      return {};
+      console.log('No precise match found, using first available result.');
+      match = result.results[0];
     }
 
     const { latitude, longitude } = match;
 
-    console.log(latitude + ' ' + longitude);
+    console.log('Selected location:', latitude, longitude);
 
     return { latitude, longitude };
   } catch (error) {
-    console.error('Error in getLocation:', error);
+    console.error('Error in getLocation:', error.message);
     return {};
   }
 };
@@ -104,12 +99,12 @@ const getHistoricalClimateData = async (latitude, longitude) => {
 
     const formatDate = (date) => date.toISOString().split('T')[0];
 
-    const apiUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${latitude}&longitude=${longitude}&start_date=${formatDate(startDate)}&end_date=${formatDate(endDate)}&daily=temperature_2m_mean,relative_humidity_2m_mean,precipitation_sum`;
-
-    const response = await fetch(apiUrl);
-    const result = await response.json();
+    const response = await HISTORIAL_CLIMATE_DATA_API.get(
+      `/v1/archive?latitude=${latitude}&longitude=${longitude}&start_date=${formatDate(startDate)}&end_date=${formatDate(endDate)}&daily=temperature_2m_mean,relative_humidity_2m_mean,precipitation_sum`,
+    );
+    const result = response.data;
     const daily = result.daily;
-    // console.log(daily);
+    console.log('HISTORIAL CLIMATE API - Daily' + daily);
 
     if (!daily || !daily.time || daily.time.length === 0) {
       console.log('Historical weather data not found via Open-Meteo.');
@@ -138,12 +133,12 @@ const getHistoricalClimateData = async (latitude, longitude) => {
 
 const getSoilData = async (latitude, longitude) => {
   try {
-    const url = `https://rest.isric.org/soilgrids/v2.0/properties/query?lat=${latitude}&lon=${longitude}`;
-    const response = await fetch(url);
-    const data = await response.json();
-    const layers = data?.properties?.layers || [];
+    const response = await ISRIC_ORG_API.get(
+      `/soilgrids/v2.0/properties/query?lat=${latitude}&lon=${longitude}`,
+    );
+    const layers = response.data?.properties?.layers || [];
 
-    console.log(data?.properties?.layers);
+    console.log('ISRIC_ORG_API = ', data?.properties?.layers);
 
     console.log(JSON.stringify(data, null, 2));
 
@@ -157,8 +152,6 @@ const getSoilData = async (latitude, longitude) => {
     const nitrogenValue = getLayerValues('nitrogen');
     const clayContent = getLayerValues('clay');
     const organicCarbon = getLayerValues('soc');
-
-    // console.log("ph " + phValue + " nitrogen " + nitrogenValue + " clay " + clayContent + " soc " + organicCarbon);
 
     return {
       ph: phValue ? (phValue / 10).toFixed(2) : null,

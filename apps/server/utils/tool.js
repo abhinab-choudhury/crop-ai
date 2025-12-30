@@ -80,11 +80,11 @@ export const tools = [
       description: 'Predict best crop based on soil and rainfall',
       parameters: {
         type: 'object',
-        required: ['nitrogen', 'phosphorous', 'pottasium', 'ph', 'rainfall', 'lat', 'lon'],
+        required: ['nitrogen', 'phosphorus', 'potassium', 'ph', 'rainfall', 'lat', 'lon'],
         properties: {
           nitrogen: { type: 'number' },
-          phosphorous: { type: 'number' },
-          pottasium: { type: 'number' },
+          phosphorus: { type: 'number' },
+          potassium: { type: 'number' },
           ph: { type: 'number' },
           rainfall: { type: 'number' },
           lat: { type: 'number' },

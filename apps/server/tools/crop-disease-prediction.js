@@ -1,22 +1,17 @@
-import env from './../utils/env.js';
+import { ML_SERVER_API } from '../utils/axios.js';
 
 export default async function cropDiseasePrediction(file_url) {
   try {
-    const response = await fetch(`${env.ML_SERVER}/predict/resnet50`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        url: file_url,
-      }),
+    const response = await ML_SERVER_API.post('/predict/resnet50', {
+      url: file_url,
     });
 
     if (!response.ok) {
       throw new Error(`ML server error: ${response.statusText}`);
     }
 
-    const result = await response.json();
+    const result = response.data;
+    console.log('Crop Disease Prediction =', result);
 
     return {
       success: true,
