@@ -10,6 +10,12 @@
 
 ---
 
+## 🚀 Live Demo
+
+👉 https://crop-ai-one.vercel.app/
+
+---
+
 # 🚀 Overview
 
 Crop AI is a full-stack, AI-driven agriculture platform designed to assist farmers with:
