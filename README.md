@@ -1,8 +1,107 @@
-<div align="center">
-  <img src="https://crop-ai-one.vercel.app/icon.png" alt="Crop AI Logo" width="100"/>
-  <h1>Crop AI</h1>
-  <p>AI-powered crop diagnosis, guidance, and multilingual support for farmers</p>
+<div align="center"> 
+  <img src="https://crop-ai-one.vercel.app/icon.png" alt="Crop AI Logo" width="120"/> 
+  <h2>AI-Powered Crop Diagnosis, Advisory & Multilingual Assistance</h2> 
+  <p> 
+    An end-to-end, mobile-first platform that helps farmers diagnose crop diseases, 
+    get intelligent recommendations, and interact using voice or chat — even in 
+    low-connectivity environments. 
+  </p> 
 </div>
+
+---
+
+# 🚀 Overview
+
+Crop AI is a full-stack, AI-driven agriculture platform designed to assist farmers with:
+
+- 🌱 Plant disease detection from leaf images
+- 💬 Conversational AI chat assistant
+- 🌾 Crop recommendation & yield prediction
+- 🌍 Region-aware agricultural guidance
+- 🗣 Multilingual + Speech-based interaction
+- 📱 Offline-friendly mobile experience
+
+The project is built as a TurboRepo monorepo, combining mobile, web, backend, and ML services into a single, scalable codebase.
+
+---
+
+## 🧠 System Architecture
+
+```
+            ┌──────────────┐
+            │  Mobile App  │  (React Native + Expo)
+            └──────┬───────┘
+                   │
+        ┌──────────▼─────────┐
+        │   Backend Server   │  (Node.js + Express)
+        │  Auth • Chat • API │
+        └──────┬───────┬─────┘
+               │       │
+     ┌─────────▼───┐   ▼
+     │  ML Server  │  MongoDB
+     │  (FastAPI)  │  (Mongoose)
+     └─────────────┘
+```
+
+---
+
+## ✨ Features Status 
+
+### 🤖 AI Chat Server
+
+- [x] Conversational assistant powered by **Ollama**
+- [x] Custom **tool calling system** (not LangChain-based)
+- [ ] Supports reasoning, structured responses, and agriculture-focused queries
+- [ ] Designed to later plug into LangChain.js if needed
+
+### 🌿 Plant Leaf Disease Detection
+
+- [x] Dedicated **ML server (FastAPI)**
+- [x] Image-based disease detection
+- [x] Model evolution:
+  - [x] ResNet9 → ResNet18 → **ResNet50 (current)**
+- [ ] Optimized for mobile image inputs
+
+### 🌾 Crop Recommendation & Prediction
+
+- [x] Multiple classical ML models trained and evaluated
+
+### 🗣 Voice & Language Support
+- [ ] Speech-to-Text and Text-to-Speech using (On Device using APIopenai/whisper)
+- [x] Multilingual support for farmer accessibility
+
+### 🔐 Authentication
+- [x] **Clerk** for secure, scalable authentication
+- [x] Works across mobile
+      
+---
+
+## 🛠 Tech Stack
+
+### Frontend
+
+* React Native + Expo
+* React + Vite (Web)
+* Clerk Authentication
+
+### Backend
+
+* Node.js + Express
+* MongoDB + Mongoose
+* Ollama (LLM runtime)
+
+### Machine Learning
+
+* FastAPI
+* PyTorch
+* Scikit-learn
+* XGBoost
+
+### DevOps
+
+* TurboRepo
+* Docker & Docker Compose
+* pnpm
 
 ---
 
@@ -110,4 +209,18 @@ crop-ai/
 * Works **offline** and on mobile devices
 * Easy-to-use **mobile applications**
 
+## 🧪 Machine Learning Models
+
+### 🌿 Plant Disease Detection
+
+**Image-based classification**
+
+* Backbone: **ResNet50**
+* Input: Leaf images
+* Output: Disease class + confidence
+
+**Available Models**
+
+* Disease Recommendation Models: **3**
+* Evolution: ResNet9 → ResNet18 → ResNet50
  
